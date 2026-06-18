@@ -88,15 +88,18 @@
                 });
             }
 
-            function fetchListings(searchTerm = '', locationTerm = 'all') {
-                const url = `http://localhost:5000/api/listings?search=${encodeURIComponent(searchTerm)}&location=${encodeURIComponent(locationTerm)}`;
-                fetch(url)
-                    .then(res => res.json())
-                    .then(payload => {
-                        resultsCount.textContent = `${payload.data.length} item(s) available`;
-                        renderListings(payload.data);
-                    });
-            }
+           function fetchListings(searchTerm = '', locationTerm = 'all') {
+    // We removed 'http://localhost:5000' so it starts with '/'
+    const url = `/api/listings?search=${encodeURIComponent(searchTerm)}&location=${encodeURIComponent(locationTerm)}`;
+    
+    fetch(url)
+        .then(res => res.json())
+        .then(payload => {
+            resultsCount.textContent = `${payload.data.length} item(s) available`;
+            renderListings(payload.data);
+        })
+        .catch(err => console.error("Error fetching listings:", err));
+}
 
             function renderListings(items) {
                 listingsGrid.innerHTML = '';
@@ -140,7 +143,7 @@
 
             window.deleteListing = function(id) {
                 if (confirm("Remove this post permanently?")) {
-                    fetch(`http://localhost:5000/api/listings/${id}`, {
+                    fetch(`/api/listings/${id}`, {
                         method: 'DELETE',
                         headers: { 'Authorization': `Bearer ${token}` } // Send JWT validation key
                     })
