@@ -89,7 +89,7 @@
             }
 
            function fetchListings(searchTerm = '', locationTerm = 'all') {
-    // We removed 'http://localhost:5000' so it starts with '/'
+    
     const url = `/api/listings?search=${encodeURIComponent(searchTerm)}&location=${encodeURIComponent(locationTerm)}`;
     
     fetch(url)
