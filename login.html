@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth Gate | AgroMarket</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style> @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap'); body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-md w-full bg-white rounded-2xl border border-gray-200 shadow-sm p-6 md:p-8">
+        <div class="text-center mb-8">
+            <a href="index.html" class="inline-flex items-center gap-2 text-2xl font-bold text-gray-900 mb-2">
+                <div class="bg-green-600 text-white p-2 rounded-lg text-sm"><i class="fa-solid fa-leaf"></i></div>
+                AgroMarket
+            </a>
+            <p id="auth-subtitle" class="text-sm text-gray-500">Sign in to manage your local harvest posts</p>
+        </div>
+
+        <form id="auth-form" class="space-y-4">
+            <div id="name-container" class="hidden">
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Full Name / Farm Name</label>
+                <input type="text" id="auth-name" placeholder="e.g., Thabo Molefe" class="w-full border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:bg-white transition">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">WhatsApp Phone Number</label>
+                <input type="text" id="auth-phone" required placeholder="e.g., 26771234567" class="w-full border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:bg-white transition">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Password</label>
+                <input type="password" id="auth-password" required placeholder="••••••••" class="w-full border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:bg-white transition">
+            </div>
+
+            <button type="submit" id="submit-btn" class="w-full bg-green-600 text-white font-semibold py-3 px-4 rounded-xl hover:bg-green-700 transition mt-2">
+                Sign In
+            </button>
+        </form>
+
+        <div class="text-center mt-6 pt-4 border-t border-gray-100 text-sm">
+            <span id="toggle-text" class="text-gray-500">Don't have an account?</span>
+            <button id="toggle-mode-btn" class="text-green-600 font-semibold hover:underline ml-1">Create Account</button>
+        </div>
+    </div>
+
+    <script>
+        let isLoginMode = true;
+        const form = document.getElementById('auth-form');
+        const nameContainer = document.getElementById('name-container');
+        const nameInput = document.getElementById('auth-name');
+        const subtitle = document.getElementById('auth-subtitle');
+        const submitBtn = document.getElementById('submit-btn');
+        const toggleText = document.getElementById('toggle-text');
+        const toggleModeBtn = document.getElementById('toggle-mode-btn');
+
+        // Toggle handling between Login and Registration views
+        toggleModeBtn.addEventListener('click', () => {
+            isLoginMode = !isLoginMode;
+            if (isLoginMode) {
+                subtitle.textContent = "Sign in to manage your local harvest posts";
+                nameContainer.classList.add('hidden');
+                nameInput.removeAttribute('required');
+                submitBtn.textContent = "Sign In";
+                toggleText.textContent = "Don't have an account?";
+                toggleModeBtn.textContent = "Create Account";
+            } else {
+                subtitle.textContent = "Register a farmer profile to start publishing live";
+                nameContainer.classList.remove('hidden');
+                nameInput.setAttribute('required', 'true');
+                submitBtn.textContent = "Register Account";
+                toggleText.textContent = "Already have an account?";
+                toggleModeBtn.textContent = "Sign In";
+            }
+        });
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const phone = document.getElementById('auth-phone').value;
+            const password = document.getElementById('auth-password').value;
+            
+            const endpoint = isLoginMode ? '/api/auth/login' : '/api/auth/register';
+            const payload = isLoginMode ? { phone, password } : { name: nameInput.value, phone, password };
+
+            fetch(`http://localhost:5000${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Cache token and profile context right in localStorage
+                    localStorage.setItem('agro_token', data.token);
+                    localStorage.setItem('user_profile', JSON.stringify(data.user));
+                    
+                    alert(isLoginMode ? "Welcome back!" : "Registration complete!");
+                    window.location.href = 'index.html';
+                } else {
+                    alert("Authentication Error: " + data.error);
+                }
+            })
+            .catch(err => alert("Could not establish server connection."));
+        });
+    </script>
+</body>
+</html>

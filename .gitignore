@@ -1,0 +1,15 @@
+# Ignore local dependencies
+node_modules/
+
+# Ignore local database states (Cloud hosting will manage these)
+listings.json
+users.json
+
+# Ignore temporary uploaded photos
+uploads/*.jpg
+uploads/*.png
+uploads/*.webp
+uploads/*.jpeg
+
+# Ignore environment variable configuration secrets
+.env
