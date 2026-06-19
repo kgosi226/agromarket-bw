@@ -1,7 +1,19 @@
+require('dotenv').config();
+const express = require('express');
+const mongoose = require('mongoose');
+const path = require('path');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
 
-// Configure Cloudinary using your existing Render env vars
+// 👉 Perfectly imports your exact User and Listing models
+const { Listing, User } = require('./models');
+
+const app = express();
+app.use(express.json());
+
+// --- Cloudinary config (uses your existing Render env vars) ---
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
@@ -11,19 +23,7 @@ cloudinary.config({
 // Multer stores the file in memory so we can stream it straight to Cloudinary
 const upload = multer({ storage: multer.memoryStorage() });
 
-require('dotenv').config();
-const express = require('express');
-const mongoose = require('mongoose');
-const path = require('path');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-
-// 👉 Perfectly imports your exact User and Listing models
-const { Listing, User } = require('./models');
-
-const app = express();
-app.use(express.json());
-
+// --- JWT auth middleware ---
 function verifyToken(req, res, next) {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -45,7 +45,9 @@ function verifyToken(req, res, next) {
 const publicPath = path.join(__dirname, 'public');
 app.use(express.static(publicPath));
 
-// --- 2. LISTINGS API ROUTE ---
+// --- 2. LISTINGS API ROUTES ---
+
+// Get listings (with optional search/location filtering)
 app.get('/api/listings', async (req, res) => {
     try {
         const { search, location } = req.query;
@@ -67,6 +69,7 @@ app.get('/api/listings', async (req, res) => {
     }
 });
 
+// Create a new listing (with optional image upload to Cloudinary)
 app.post('/api/listings', verifyToken, upload.single('image'), async (req, res) => {
     try {
         const { category, name, location, price, unit, quantity, readyDate } = req.body;
@@ -80,29 +83,6 @@ app.post('/api/listings', verifyToken, upload.single('image'), async (req, res) 
         if (!user) {
             return res.status(401).json({ error: "User not found." });
         }
-
-        app.delete('/api/listings/:id', verifyToken, async (req, res) => {
-    try {
-        const listing = await Listing.findById(req.params.id);
-
-        if (!listing) {
-            return res.status(404).json({ error: "Listing not found." });
-        }
-
-        // Only the owner can delete their own listing
-        if (listing.userId.toString() !== req.userId) {
-            return res.status(403).json({ error: "You can only delete your own listings." });
-        }
-
-        await Listing.findByIdAndDelete(req.params.id);
-
-        res.status(200).json({ message: "Listing deleted successfully." });
-
-    } catch (error) {
-        console.error("❌ Error deleting listing:", error);
-        res.status(500).json({ error: "Failed to delete listing." });
-    }
-});
 
         let imageUrl = '';
 
@@ -141,6 +121,31 @@ app.post('/api/listings', verifyToken, upload.single('image'), async (req, res) 
         res.status(500).json({ error: "Failed to create listing." });
     }
 });
+
+// Delete a listing (owner only)
+app.delete('/api/listings/:id', verifyToken, async (req, res) => {
+    try {
+        const listing = await Listing.findById(req.params.id);
+
+        if (!listing) {
+            return res.status(404).json({ error: "Listing not found." });
+        }
+
+        // Only the owner can delete their own listing
+        if (listing.userId.toString() !== req.userId) {
+            return res.status(403).json({ error: "You can only delete your own listings." });
+        }
+
+        await Listing.findByIdAndDelete(req.params.id);
+
+        res.status(200).json({ message: "Listing deleted successfully." });
+
+    } catch (error) {
+        console.error("❌ Error deleting listing:", error);
+        res.status(500).json({ error: "Failed to delete listing." });
+    }
+});
+
 // --- 3. AUTH ROUTES ---
 
 // Register
