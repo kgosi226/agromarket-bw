@@ -81,6 +81,29 @@ app.post('/api/listings', verifyToken, upload.single('image'), async (req, res) 
             return res.status(401).json({ error: "User not found." });
         }
 
+        app.delete('/api/listings/:id', verifyToken, async (req, res) => {
+    try {
+        const listing = await Listing.findById(req.params.id);
+
+        if (!listing) {
+            return res.status(404).json({ error: "Listing not found." });
+        }
+
+        // Only the owner can delete their own listing
+        if (listing.userId.toString() !== req.userId) {
+            return res.status(403).json({ error: "You can only delete your own listings." });
+        }
+
+        await Listing.findByIdAndDelete(req.params.id);
+
+        res.status(200).json({ message: "Listing deleted successfully." });
+
+    } catch (error) {
+        console.error("❌ Error deleting listing:", error);
+        res.status(500).json({ error: "Failed to delete listing." });
+    }
+});
+
         let imageUrl = '';
 
         if (req.file) {
