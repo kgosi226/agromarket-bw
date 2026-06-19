@@ -16,7 +16,18 @@ app.use(express.static(publicPath));
 // --- 2. THE API ROUTE ---
 app.get('/api/listings', async (req, res) => {
     try {
-        const data = await Listing.find({});
+        const { search, location } = req.query;
+        const query = {};
+
+        if (search && search.trim() !== '') {
+            query.name = { $regex: search.trim(), $options: 'i' }; // case-insensitive partial match
+        }
+
+        if (location && location !== 'all') {
+            query.location = { $regex: `^${location}$`, $options: 'i' }; // exact match, case-insensitive
+        }
+
+        const data = await Listing.find(query);
         res.status(200).json(data);
     } catch (error) {
         console.error("❌ Error fetching data:", error);
