@@ -156,15 +156,15 @@
     },
     body: formData
 })
-            .then(res => res.json())
-            .then(payload => {
-                if(payload.success) {
-                    alert('Listing successfully created under your profile!');
-                    window.location.href = 'index.html';
-                } else {
-                    alert('Error: ' + payload.error);
-                }
-            })
+        .then(res => res.json().then(data => ({ ok: res.ok, data })))
+.then(({ ok, data }) => {
+    if (ok) {
+        alert('Listing successfully created under your profile!');
+        window.location.href = 'index.html';
+    } else {
+        alert('Error: ' + data.error);
+    }
+})
             .catch(err => {
                 console.error(err);
                 alert('Could not stream packet configurations to backend.');

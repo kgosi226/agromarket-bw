@@ -1,3 +1,16 @@
+const multer = require('multer');
+const { v2: cloudinary } = require('cloudinary');
+
+// Configure Cloudinary using your existing Render env vars
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Multer stores the file in memory so we can stream it straight to Cloudinary
+const upload = multer({ storage: multer.memoryStorage() });
+
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
@@ -10,6 +23,23 @@ const { Listing, User } = require('./models');
 
 const app = express();
 app.use(express.json());
+
+function verifyToken(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'No token provided.' });
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.userId = decoded.userId;
+        next();
+    } catch (err) {
+        return res.status(401).json({ error: 'Invalid or expired token.' });
+    }
+}
 
 // --- 1. STATIC FILES ---
 const publicPath = path.join(__dirname, 'public');
@@ -37,6 +67,57 @@ app.get('/api/listings', async (req, res) => {
     }
 });
 
+app.post('/api/listings', verifyToken, upload.single('image'), async (req, res) => {
+    try {
+        const { category, name, location, price, unit, quantity, readyDate } = req.body;
+
+        if (!name || !location || !price || !unit || !quantity) {
+            return res.status(400).json({ error: "Missing required fields." });
+        }
+
+        // Look up the logged-in user's phone number to attach to the listing
+        const user = await User.findById(req.userId);
+        if (!user) {
+            return res.status(401).json({ error: "User not found." });
+        }
+
+        let imageUrl = '';
+
+        if (req.file) {
+            // Upload the image buffer to Cloudinary
+            const uploadResult = await new Promise((resolve, reject) => {
+                const stream = cloudinary.uploader.upload_stream(
+                    { folder: 'agromarket' },
+                    (error, result) => {
+                        if (error) reject(error);
+                        else resolve(result);
+                    }
+                );
+                stream.end(req.file.buffer);
+            });
+            imageUrl = uploadResult.secure_url;
+        }
+
+        const newListing = await Listing.create({
+            userId: req.userId,
+            name,
+            category,
+            quantity,
+            location,
+            readyDate,
+            price: Number(price),
+            unit,
+            phone: user.phone,
+            image: imageUrl
+        });
+
+        res.status(201).json(newListing);
+
+    } catch (error) {
+        console.error("❌ Error creating listing:", error);
+        res.status(500).json({ error: "Failed to create listing." });
+    }
+});
 // --- 3. AUTH ROUTES ---
 
 // Register
