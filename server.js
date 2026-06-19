@@ -3,28 +3,20 @@ const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
 
+// 👉 Perfectly imports your exact Listing model
+const { Listing } = require('./models');
+
 const app = express();
 app.use(express.json());
 
 // --- 1. STATIC FILES ---
-// Tells Express where your frontend is (the public folder)
 const publicPath = path.join(__dirname, 'public');
 app.use(express.static(publicPath));
 
-// --- 2. THE API ROUTE (MongoDB Data Fetch) ---
-// This uses your models.js file to securely fetch data without crashing
+// --- 2. THE API ROUTE ---
 app.get('/api/listings', async (req, res) => {
     try {
-        // 1. Import your actual database models
-        const models = require('./models');
-        
-        // 2. Find the Listing model (handles different export methods)
-        const Listing = models.Listing || mongoose.models.Listing || models;
-        
-        // 3. Fetch all listings from the database
         const data = await Listing.find({});
-        
-        // 4. Send the data array back to the frontend
         res.status(200).json(data);
     } catch (error) {
         console.error("❌ Error fetching data:", error);
@@ -32,8 +24,7 @@ app.get('/api/listings', async (req, res) => {
     }
 });
 
-// --- 3. CATCH-ALL ROUTE (The Render Crash Fix) ---
-// Safely handles page refreshes without triggering the PathError
+// --- 3. CATCH-ALL ROUTE ---
 app.get(/^(?!\/api).*/, (req, res) => {
     res.sendFile(path.join(publicPath, 'index.html'));
 });
@@ -44,10 +35,9 @@ const PORT = process.env.PORT || 10000;
 mongoose.connect(process.env.MONGO_URI)
     .then(() => {
         console.log("✅ Connected to MongoDB Atlas");
-        app.listen(PORT, () => console.log(`🚀 Server running and ready on port ${PORT}`));
+        app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
     })
     .catch((err) => {
         console.error("❌ Database connection failed:", err);
-        // Start the server anyway so Render stays "Live" and doesn't crash
         app.listen(PORT, () => console.log(`🚀 Server running (DB Error) on port ${PORT}`));
     });
