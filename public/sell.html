@@ -149,14 +149,13 @@
                 formData.append('image', fileInput.files[0]);
             }
 
-            // Stream everything to the backend
-            fetch('http://localhost:5000/api/listings', {
-                method: 'POST',
-                headers: { 
-                    'Authorization': `Bearer ${token}` 
-                },
-                body: formData // Let browser auto-set headers for multi-part boundaries
-            })
+           fetch('/api/listings', {
+    method: 'POST',
+    headers: { 
+        'Authorization': `Bearer ${token}` 
+    },
+    body: formData
+})
             .then(res => res.json())
             .then(payload => {
                 if(payload.success) {

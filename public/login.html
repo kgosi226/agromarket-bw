@@ -84,12 +84,11 @@
             
             const endpoint = isLoginMode ? '/api/auth/login' : '/api/auth/register';
             const payload = isLoginMode ? { phone, password } : { name: nameInput.value, phone, password };
-
-            fetch(`http://localhost:5000${endpoint}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
+fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+})
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
