@@ -12,24 +12,28 @@ const publicPath = path.join(__dirname, 'public');
 app.use(express.static(publicPath));
 
 // --- 2. THE API ROUTE (MongoDB Data Fetch) ---
-// This is the missing code. It fetches your data straight from the database 
-// and sends it to your frontend so your website actually shows items.
+// This uses your models.js file to securely fetch data without crashing
 app.get('/api/listings', async (req, res) => {
     try {
-        // This connects directly to your 'listings' collection in MongoDB Atlas
-        const collection = mongoose.connection.db.collection('listings');
-        const data = await collection.find({}).toArray();
+        // 1. Import your actual database models
+        const models = require('./models');
         
-        // Sends the data back to your website
+        // 2. Find the Listing model (handles different export methods)
+        const Listing = models.Listing || mongoose.models.Listing || models;
+        
+        // 3. Fetch all listings from the database
+        const data = await Listing.find({});
+        
+        // 4. Send the data array back to the frontend
         res.status(200).json(data);
     } catch (error) {
-        console.error("❌ Error fetching data from MongoDB:", error);
+        console.error("❌ Error fetching data:", error);
         res.status(500).json({ error: "Failed to fetch data" });
     }
 });
 
 // --- 3. CATCH-ALL ROUTE (The Render Crash Fix) ---
-// This safely handles page refreshes without triggering the PathError
+// Safely handles page refreshes without triggering the PathError
 app.get(/^(?!\/api).*/, (req, res) => {
     res.sendFile(path.join(publicPath, 'index.html'));
 });
