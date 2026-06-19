@@ -84,14 +84,15 @@
             
             const endpoint = isLoginMode ? '/api/auth/login' : '/api/auth/register';
             const payload = isLoginMode ? { phone, password } : { name: nameInput.value, phone, password };
-fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-})
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
+
+            fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json().then(data => ({ ok: res.ok, data })))
+            .then(({ ok, data }) => {
+                if (ok) {
                     // Cache token and profile context right in localStorage
                     localStorage.setItem('agro_token', data.token);
                     localStorage.setItem('user_profile', JSON.stringify(data.user));
