@@ -95,9 +95,9 @@
     fetch(url)
         .then(res => res.json())
         .then(payload => {
-            resultsCount.textContent = `${payload.data.length} item(s) available`;
-            renderListings(payload.data);
-        })
+    resultsCount.textContent = `${payload.length} item(s) available`;
+    renderListings(payload);
+})
         .catch(err => console.error("Error fetching listings:", err));
 }
 
