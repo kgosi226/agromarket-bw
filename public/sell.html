@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Post a Listing | AgroMarket</title>
+    <title id="page-title">Post a Listing | AgroMarket</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -27,7 +27,7 @@
     <!-- Form Section -->
     <main class="max-w-2xl mx-auto w-full px-4 py-12">
         <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-10">
-            <h1 class="text-2xl font-bold text-gray-900 mb-2">List your harvest or livestock</h1>
+            <h1 id="form-heading" class="text-2xl font-bold text-gray-900 mb-2">List your harvest or livestock</h1>
             <p class="text-gray-500 text-sm mb-8">Fill in the product details below. Your registered WhatsApp phone number will be attached automatically.</p>
 
             <form id="listing-form" class="space-y-6">
@@ -87,7 +87,7 @@
 
                 <!-- IMAGE UPLOAD ASSIST BLOCK -->
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Upload Photos (up to 4)</label>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Photos (up to 4)</label>
                     <div id="upload-dropzone" class="w-full border-2 border-dashed border-gray-300 rounded-xl p-6 bg-gray-50 hover:bg-gray-100 transition relative flex flex-col items-center justify-center text-center">
                         <i class="fa-solid fa-cloud-arrow-up text-3xl text-gray-400 mb-2"></i>
                         <span class="text-sm font-medium text-gray-600 mb-1">Click to select up to 4 photos</span>
@@ -95,12 +95,12 @@
                         <!-- The hidden native input that drives file picking -->
                         <input type="file" id="image-file" accept="image/*" multiple class="absolute inset-0 opacity-0 cursor-pointer">
                     </div>
-                    <!-- Thumbnail previews of selected photos -->
+                    <!-- Thumbnail previews — existing photos (edit mode) and newly selected ones, all removable -->
                     <div id="photo-previews" class="grid grid-cols-4 gap-2 mt-3"></div>
                     <p id="file-chosen-name" class="text-xs font-semibold text-green-600 mt-2 hidden"></p>
                 </div>
 
-                <button type="submit" class="w-full bg-green-600 text-white font-semibold py-3.5 px-4 rounded-xl hover:bg-green-700 transition shadow-md shadow-green-600/10">
+                <button type="submit" id="submit-btn" class="w-full bg-green-600 text-white font-semibold py-3.5 px-4 rounded-xl hover:bg-green-700 transition shadow-md shadow-green-600/10">
                     Publish Listing Live
                 </button>
             </form>
@@ -119,34 +119,65 @@
             window.location.href = 'login.html';
         }
 
+        // --- Edit mode detection ---
+        const params = new URLSearchParams(window.location.search);
+        const editId = params.get('edit'); // present when editing an existing listing
+        const isEditMode = !!editId;
+
         const MAX_PHOTOS = 4;
         const fileInput = document.getElementById('image-file');
         const fileLabel = document.getElementById('file-chosen-name');
         const previewsContainer = document.getElementById('photo-previews');
+        const submitBtn = document.getElementById('submit-btn');
+        const formHeading = document.getElementById('form-heading');
 
-        // Holds the actual File objects the user has picked, across multiple selections
+        // Existing photo URLs kept from before (edit mode only) — strings, not File objects
+        let existingImageUrls = [];
+        // Newly selected File objects (works for both create and edit)
         let selectedFiles = [];
+
+        function totalPhotoCount() {
+            return existingImageUrls.length + selectedFiles.length;
+        }
 
         function renderPreviews() {
             previewsContainer.innerHTML = '';
-            selectedFiles.forEach((file, index) => {
-                const url = URL.createObjectURL(file);
+
+            // Existing photos first (edit mode)
+            existingImageUrls.forEach((url, index) => {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'relative aspect-square rounded-lg overflow-hidden border border-gray-200 bg-gray-100';
                 wrapper.innerHTML = `
                     <img src="${url}" class="w-full h-full object-cover">
-                    <button type="button" data-index="${index}" class="remove-photo-btn absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 transition">
+                    <button type="button" data-type="existing" data-index="${index}" class="remove-photo-btn absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 transition">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 `;
                 previewsContainer.appendChild(wrapper);
             });
 
-            // Wire up remove buttons
+            // Then newly picked files
+            selectedFiles.forEach((file, index) => {
+                const url = URL.createObjectURL(file);
+                const wrapper = document.createElement('div');
+                wrapper.className = 'relative aspect-square rounded-lg overflow-hidden border border-gray-200 bg-gray-100';
+                wrapper.innerHTML = `
+                    <img src="${url}" class="w-full h-full object-cover">
+                    <button type="button" data-type="new" data-index="${index}" class="remove-photo-btn absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                `;
+                previewsContainer.appendChild(wrapper);
+            });
+
             previewsContainer.querySelectorAll('.remove-photo-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const idx = parseInt(btn.dataset.index, 10);
-                    selectedFiles.splice(idx, 1);
+                    if (btn.dataset.type === 'existing') {
+                        existingImageUrls.splice(idx, 1);
+                    } else {
+                        selectedFiles.splice(idx, 1);
+                    }
                     renderPreviews();
                     updateLabel();
                 });
@@ -154,36 +185,70 @@
         }
 
         function updateLabel() {
-            if (selectedFiles.length > 0) {
-                fileLabel.textContent = `${selectedFiles.length} photo(s) selected`;
+            const count = totalPhotoCount();
+            if (count > 0) {
+                fileLabel.textContent = `${count} photo(s) selected`;
                 fileLabel.classList.remove('hidden');
             } else {
                 fileLabel.classList.add('hidden');
             }
         }
 
-        // File Selection Handler — adds newly picked files, up to the max
+        // File Selection Handler — adds newly picked files, respecting the combined max
         fileInput.addEventListener('change', function() {
             const newFiles = Array.from(this.files || []);
-            const combined = [...selectedFiles, ...newFiles].slice(0, MAX_PHOTOS);
+            const roomLeft = MAX_PHOTOS - existingImageUrls.length - selectedFiles.length;
 
-            if (selectedFiles.length + newFiles.length > MAX_PHOTOS) {
-                alert(`You can upload up to ${MAX_PHOTOS} photos. Only the first ${MAX_PHOTOS} were kept.`);
+            if (newFiles.length > roomLeft) {
+                alert(`You can have up to ${MAX_PHOTOS} photos total. Only ${Math.max(roomLeft, 0)} more could be added.`);
             }
 
-            selectedFiles = combined;
+            selectedFiles = [...selectedFiles, ...newFiles.slice(0, Math.max(roomLeft, 0))];
             renderPreviews();
             updateLabel();
 
-            // Reset the native input so picking the same file again still fires 'change'
             this.value = '';
         });
 
-        // Form Submit Handler
+        // --- If editing, pre-fill the form with the existing listing's data ---
+        if (isEditMode) {
+            formHeading.textContent = 'Edit your listing';
+            submitBtn.textContent = 'Update Listing';
+            document.getElementById('page-title').textContent = 'Edit Listing | AgroMarket';
+
+            fetch(`/api/listings/${editId}`)
+                .then(res => res.json().then(data => ({ ok: res.ok, data })))
+                .then(({ ok, data }) => {
+                    if (!ok) {
+                        alert('Could not load this listing for editing.');
+                        window.location.href = 'profile.html';
+                        return;
+                    }
+
+                    document.getElementById('name').value = data.name || '';
+                    document.getElementById('location').value = data.location || '';
+                    document.getElementById('price').value = data.price || '';
+                    document.getElementById('unit').value = data.unit || '';
+                    document.getElementById('quantity').value = data.quantity || '';
+                    document.getElementById('readyDate').value = data.readyDate || '';
+
+                    const categoryRadio = document.querySelector(`input[name="category"][value="${data.category}"]`);
+                    if (categoryRadio) categoryRadio.checked = true;
+
+                    existingImageUrls = (data.images && data.images.length > 0) ? [...data.images] : (data.image ? [data.image] : []);
+                    renderPreviews();
+                    updateLabel();
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Could not load this listing for editing.');
+                });
+        }
+
+        // Form Submit Handler — creates or updates depending on mode
         document.getElementById('listing-form').addEventListener('submit', function(e) {
             e.preventDefault();
 
-            // Construct Multipart Form Body to mix textual inputs and binary files cleanly
             const formData = new FormData();
 
             formData.append('category', document.querySelector('input[name="category"]:checked').value);
@@ -194,13 +259,21 @@
             formData.append('quantity', document.getElementById('quantity').value);
             formData.append('readyDate', document.getElementById('readyDate').value);
 
-            // Append each selected photo under the 'images' field (matches upload.array('images', 4) on the server)
+            // Newly picked photo files
             selectedFiles.forEach(file => {
                 formData.append('images', file);
             });
 
-            fetch('/api/listings', {
-                method: 'POST',
+            // In edit mode, tell the server which existing photos to keep
+            if (isEditMode) {
+                formData.append('existingImages', JSON.stringify(existingImageUrls));
+            }
+
+            const url = isEditMode ? `/api/listings/${editId}` : '/api/listings';
+            const method = isEditMode ? 'PUT' : 'POST';
+
+            fetch(url, {
+                method: method,
                 headers: { 
                     'Authorization': `Bearer ${token}` 
                 },
@@ -209,8 +282,8 @@
             .then(res => res.json().then(data => ({ ok: res.ok, data })))
             .then(({ ok, data }) => {
                 if (ok) {
-                    alert('Listing successfully created under your profile!');
-                    window.location.href = 'index.html';
+                    alert(isEditMode ? 'Listing updated successfully!' : 'Listing successfully created under your profile!');
+                    window.location.href = isEditMode ? `listing.html?id=${editId}` : 'index.html';
                 } else {
                     alert('Error: ' + data.error);
                 }

@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
 
-// Perfectly imports your exact User and Listing models
+// 👉 Perfectly imports your exact User and Listing models
 const { Listing, User } = require('./models');
 
 const app = express();
@@ -169,6 +169,65 @@ app.delete('/api/listings/:id', verifyToken, async (req, res) => {
     }
 });
 
+// Update a listing (owner only) — text fields, plus optional new/replacement photos
+app.put('/api/listings/:id', verifyToken, upload.array('images', 4), async (req, res) => {
+    try {
+        const listing = await Listing.findById(req.params.id);
+
+        if (!listing) {
+            return res.status(404).json({ error: "Listing not found." });
+        }
+
+        if (listing.userId.toString() !== req.userId) {
+            return res.status(403).json({ error: "You can only edit your own listings." });
+        }
+
+        const { category, name, location, price, unit, quantity, readyDate, existingImages } = req.body;
+
+        if (!name || !location || !price || !unit || !quantity) {
+            return res.status(400).json({ error: "Missing required fields." });
+        }
+
+        // Photos the user kept from before (sent back as a JSON string array from the frontend)
+        let keptImages = [];
+        if (existingImages) {
+            try {
+                keptImages = JSON.parse(existingImages);
+            } catch (e) {
+                keptImages = [];
+            }
+        }
+
+        // Upload any newly added photos
+        let newImages = [];
+        if (req.files && req.files.length > 0) {
+            newImages = await Promise.all(
+                req.files.map(file => uploadToCloudinary(file.buffer))
+            );
+        }
+
+        const finalImages = [...keptImages, ...newImages].slice(0, 4);
+
+        listing.category = category;
+        listing.name = name;
+        listing.location = location;
+        listing.price = Number(price);
+        listing.unit = unit;
+        listing.quantity = quantity;
+        listing.readyDate = readyDate;
+        listing.images = finalImages;
+        listing.image = finalImages[0] || listing.image || '';
+
+        await listing.save();
+
+        res.status(200).json(listing);
+
+    } catch (error) {
+        console.error("❌ Error updating listing:", error);
+        res.status(500).json({ error: "Failed to update listing." });
+    }
+});
+
 // --- USER PROFILE ROUTES ---
 
 // Get current user's profile
@@ -219,55 +278,7 @@ app.put('/api/users/me/password', verifyToken, async (req, res) => {
     }
 });
 
-// --- 3. WISHLIST API ROUTES ---
-
-// Add item to wishlist ($addToSet prevents duplication errors if double-clicked)
-app.post('/api/wishlist/add', verifyToken, async (req, res) => {
-    try {
-        const { listingId } = req.body;
-        
-        await User.findByIdAndUpdate(req.userId, {
-            $addToSet: { wishlist: listingId }
-        });
-
-        res.status(200).json({ message: "Item added to wishlist successfully." });
-    } catch (error) {
-        console.error("❌ Wishlist update error:", error);
-        res.status(500).json({ error: "Failed to add item to wishlist." });
-    }
-});
-
-// Remove item from wishlist ($pull cleanly removes the ID from your array)
-app.post('/api/wishlist/remove', verifyToken, async (req, res) => {
-    try {
-        const { listingId } = req.body;
-        
-        await User.findByIdAndUpdate(req.userId, {
-            $pull: { wishlist: listingId }
-        });
-
-        res.status(200).json({ message: "Item removed from wishlist successfully." });
-    } catch (error) {
-        console.error("❌ Wishlist removal error:", error);
-        res.status(500).json({ error: "Failed to remove item from wishlist." });
-    }
-});
-
-// Fetch active populated wishlist elements directly linked to authenticated user profile
-app.get('/api/wishlist', verifyToken, async (req, res) => {
-    try {
-        const user = await User.findById(req.userId).populate('wishlist');
-        if (!user) {
-            return res.status(404).json({ error: "User profile not found." });
-        }
-        res.status(200).json(user.wishlist);
-    } catch (error) {
-        console.error("❌ Error fetching wishlist items:", error);
-        res.status(500).json({ error: "Failed to retrieve wishlist items." });
-    }
-});
-
-// --- 4. AUTH ROUTES ---
+// --- 3. AUTH ROUTES ---
 
 // Register
 app.post('/api/auth/register', async (req, res) => {
@@ -340,12 +351,12 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// --- 5. CATCH-ALL ROUTE ---
+// --- 4. CATCH-ALL ROUTE ---
 app.get(/^(?!\/api).*/, (req, res) => {
     res.sendFile(path.join(publicPath, 'index.html'));
 });
 
-// --- 6. CONNECT TO DB & START SERVER ---
+// --- 5. CONNECT TO DB & START SERVER ---
 const PORT = process.env.PORT || 10000;
 
 mongoose.connect(process.env.MONGO_URI)
