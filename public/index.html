@@ -84,14 +84,23 @@
                 loggedInUser.userId = tokenPayload.userId;
 
                 navActions.innerHTML = `
+                    <a href="profile.html" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition" title="My Profile">
+                        <i class="fa-solid fa-user text-sm"></i>
+                    </a>
                     <div class="text-right hidden sm:block">
                         <p class="text-xs font-bold text-gray-900">${loggedInUser.name}</p>
                         <button id="logout-btn" class="text-[11px] text-red-500 font-semibold hover:underline">Sign Out</button>
                     </div>
-                    <a href="sell.html" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition">Post Product</a>
+                    <button id="logout-btn-mobile" class="sm:hidden text-[11px] text-red-500 font-semibold">Sign Out</button>
+                    <a href="sell.html" class="bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition">Post Product</a>
                 `;
                 
                 document.getElementById('logout-btn')?.addEventListener('click', () => {
+                    localStorage.clear();
+                    window.location.reload();
+                });
+
+                document.getElementById('logout-btn-mobile')?.addEventListener('click', () => {
                     localStorage.clear();
                     window.location.reload();
                 });
