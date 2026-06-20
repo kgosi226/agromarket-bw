@@ -156,6 +156,21 @@
             }
 
             searchBtn.addEventListener('click', () => fetchListings(searchInput.value, locationSelect.value));
+
+            // Live search: fires automatically as you type, with a short debounce delay
+            let searchDebounceTimer;
+            searchInput.addEventListener('input', () => {
+                clearTimeout(searchDebounceTimer);
+                searchDebounceTimer = setTimeout(() => {
+                    fetchListings(searchInput.value, locationSelect.value);
+                }, 400); // waits 400ms after you stop typing before searching
+            });
+
+            // Also re-fetch instantly when the location dropdown changes
+            locationSelect.addEventListener('change', () => {
+                fetchListings(searchInput.value, locationSelect.value);
+            });
+
             fetchListings();
         });
     </script>
