@@ -146,6 +146,55 @@ app.delete('/api/listings/:id', verifyToken, async (req, res) => {
     }
 });
 
+// --- USER PROFILE ROUTES ---
+
+// Get current user's profile
+app.get('/api/users/me', verifyToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.userId).select('name phone');
+        if (!user) {
+            return res.status(404).json({ error: "User not found." });
+        }
+        res.status(200).json({ name: user.name, phone: user.phone });
+    } catch (error) {
+        console.error("❌ Error fetching profile:", error);
+        res.status(500).json({ error: "Failed to fetch profile." });
+    }
+});
+
+// Change current user's password
+app.put('/api/users/me/password', verifyToken, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ error: "Current and new password are required." });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ error: "New password must be at least 6 characters." });
+        }
+
+        const user = await User.findById(req.userId);
+        if (!user) {
+            return res.status(404).json({ error: "User not found." });
+        }
+
+        const passwordMatches = await bcrypt.compare(currentPassword, user.password);
+        if (!passwordMatches) {
+            return res.status(401).json({ error: "Current password is incorrect." });
+        }
+
+        user.password = await bcrypt.hash(newPassword, 10);
+        await user.save();
+
+        res.status(200).json({ message: "Password updated successfully." });
+
+    } catch (error) {
+        console.error("❌ Error changing password:", error);
+        res.status(500).json({ error: "Failed to change password." });
+    }
+});
 // --- 3. AUTH ROUTES ---
 
 // Register
