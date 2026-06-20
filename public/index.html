@@ -74,14 +74,14 @@
                 const tokenPayload = JSON.parse(atob(token.split('.')[1]));
                 loggedInUser.userId = tokenPayload.userId;
 
-                navActions.innerHTML = `
-                    <div class="text-right hidden sm:block">
-                        <p class="text-xs font-bold text-gray-900">${loggedInUser.name}</p>
-                        <button id="logout-btn" class="text-[11px] text-red-500 font-semibold hover:underline">Sign Out</button>
-                    </div>
-                    <a href="sell.html" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition">Post Product</a>
-                `;
-                
+               navActions.innerHTML = `
+    <a href="profile.html" class="text-right hidden sm:block hover:opacity-80 transition">
+        <p class="text-xs font-bold text-gray-900">${loggedInUser.name}</p>
+        <span class="text-[11px] text-green-600 font-semibold">View Profile</span>
+    </a>
+    <button id="logout-btn" class="text-[11px] text-red-500 font-semibold hover:underline">Sign Out</button>
+    <a href="sell.html" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition">Post Product</a>
+`;
                 document.getElementById('logout-btn')?.addEventListener('click', () => {
                     localStorage.clear();
                     window.location.reload();

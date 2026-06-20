@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | AgroMarket</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style> @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap'); body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <nav class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <a href="index.html" class="flex items-center gap-2">
+                    <div class="bg-green-600 text-white p-2 rounded-lg"><i class="fa-solid fa-leaf"></i></div>
+                    <span class="text-xl font-bold text-gray-900">AgroMarket</span>
+                </a>
+                <a href="index.html" class="text-sm font-medium text-gray-600 hover:text-gray-900">
+                    <i class="fa-solid fa-arrow-left mr-2"></i>Back to Market
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-2xl mx-auto px-4 py-12">
+
+        <!-- Profile Info Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8 mb-8">
+            <h1 class="text-2xl font-bold text-gray-900 mb-6">My Profile</h1>
+            <div id="profile-info" class="space-y-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-green-100 text-green-700 rounded-full flex items-center justify-center">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div>
+                        <p id="profile-name" class="font-semibold text-gray-900">Loading...</p>
+                        <p id="profile-phone" class="text-sm text-gray-500"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Change Password Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8 mb-8">
+            <h2 class="text-lg font-bold text-gray-900 mb-4">Change Password</h2>
+            <form id="password-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Current Password</label>
+                    <input type="password" id="current-password" required placeholder="••••••••" class="w-full border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:bg-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">New Password</label>
+                    <input type="password" id="new-password" required placeholder="At least 6 characters" class="w-full border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:bg-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Confirm New Password</label>
+                    <input type="password" id="confirm-password" required placeholder="••••••••" class="w-full border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:bg-white transition">
+                </div>
+                <button type="submit" class="w-full bg-green-600 text-white font-semibold py-3 px-4 rounded-xl hover:bg-green-700 transition">
+                    Update Password
+                </button>
+            </form>
+        </div>
+
+        <!-- My Listings Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8">
+            <h2 class="text-lg font-bold text-gray-900 mb-4">My Listings</h2>
+            <div id="my-listings" class="space-y-3">
+                <p class="text-sm text-gray-400">Loading your listings...</p>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const token = localStorage.getItem('agro_token');
+
+        // Security guard: redirect if not logged in
+        if (!token) {
+            alert('Please sign in to view your profile.');
+            window.location.href = 'login.html';
+        }
+
+        const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+        const myUserId = tokenPayload.userId;
+
+        const profileName = document.getElementById('profile-name');
+        const profilePhone = document.getElementById('profile-phone');
+        const passwordForm = document.getElementById('password-form');
+        const myListingsContainer = document.getElementById('my-listings');
+
+        // --- Load profile info ---
+        fetch('/api/users/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => res.json().then(data => ({ ok: res.ok, data })))
+        .then(({ ok, data }) => {
+            if (ok) {
+                profileName.textContent = data.name;
+                profilePhone.textContent = data.phone;
+
+                // Keep localStorage profile in sync too
+                localStorage.setItem('user_profile', JSON.stringify({ name: data.name, phone: data.phone }));
+            } else {
+                profileName.textContent = 'Could not load profile';
+                console.error(data.error);
+            }
+        })
+        .catch(err => {
+            profileName.textContent = 'Could not load profile';
+            console.error(err);
+        });
+
+        // --- Load my listings ---
+        fetch('/api/listings')
+            .then(res => res.json())
+            .then(allListings => {
+                const myListings = allListings.filter(item => item.userId === myUserId);
+
+                if (myListings.length === 0) {
+                    myListingsContainer.innerHTML = `<p class="text-sm text-gray-400">You haven't posted any listings yet.</p>`;
+                    return;
+                }
+
+                myListingsContainer.innerHTML = '';
+                myListings.forEach(item => {
+                    const row = document.createElement('div');
+                    row.className = 'flex items-center justify-between border border-gray-100 rounded-xl p-3';
+                    row.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <img src="${item.image}" alt="${item.name}" class="w-12 h-12 rounded-lg object-cover bg-gray-100">
+                            <div>
+                                <p class="font-semibold text-gray-900 text-sm capitalize">${item.name}</p>
+                                <p class="text-xs text-gray-400">P${item.price}/${item.unit} · ${item.location}</p>
+                            </div>
+                        </div>
+                        <button onclick="deleteMyListing('${item._id}')" class="w-9 h-9 bg-red-50 text-red-500 rounded-full hover:bg-red-500 hover:text-white flex items-center justify-center transition-colors">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    `;
+                    myListingsContainer.appendChild(row);
+                });
+            })
+            .catch(err => {
+                myListingsContainer.innerHTML = `<p class="text-sm text-red-400">Could not load your listings.</p>`;
+                console.error(err);
+            });
+
+        // --- Delete a listing from the profile page ---
+        window.deleteMyListing = function(id) {
+            if (confirm("Remove this listing permanently?")) {
+                fetch(`/api/listings/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                .then(res => res.json().then(data => ({ ok: res.ok, data })))
+                .then(({ ok, data }) => {
+                    if (ok) {
+                        window.location.reload();
+                    } else {
+                        alert(data.error);
+                    }
+                });
+            }
+        };
+
+        // --- Change password ---
+        passwordForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            if (newPassword !== confirmPassword) {
+                alert("New password and confirmation don't match.");
+                return;
+            }
+
+            fetch('/api/users/me/password', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ currentPassword, newPassword })
+            })
+            .then(res => res.json().then(data => ({ ok: res.ok, data })))
+            .then(({ ok, data }) => {
+                if (ok) {
+                    alert('Password updated successfully!');
+                    passwordForm.reset();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Could not connect to the server.');
+            });
+        });
+    </script>
+</body>
+</html>
