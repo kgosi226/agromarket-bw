@@ -10,7 +10,6 @@
 </head>
 <body class="h-screen overflow-hidden flex flex-col bg-gray-50 text-gray-800">
 
-    <!-- NAV: Fixed at top -->
     <nav class="flex-none bg-white border-b border-gray-200 z-50 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
@@ -26,16 +25,13 @@
         </div>
     </nav>
 
-    <!-- HEADER WRAPPER -->
     <div class="flex-none">
         <div class="bg-green-800 pb-12 sm:pb-24 pt-6 sm:pt-12 relative">
             <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1500937386664-56d1dfef4e78?auto=format&fit=crop&w=2000&q=20')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
             <div class="max-w-7xl mx-auto px-4 relative z-10 text-center">
                 <h1 class="text-2xl sm:text-4xl font-bold text-white mb-1 sm:mb-2">Direct from local farms.</h1>
-                <p class="text-green-100 text-xs sm:text-sm max-w-md mx-auto mb-3 sm:mb-6">Connect directly with Botswana's farmers. No middlemen.</p>
             </div>
         </div>
-
         <div class="max-w-4xl mx-auto px-4 -mt-6 sm:-mt-10 relative z-20 mb-6 sm:mb-12">
             <div class="bg-white rounded-xl shadow-md p-2 sm:p-3 flex flex-row gap-2 border border-gray-150">
                 <input type="text" id="search-input" placeholder="Search..." class="flex-1 min-w-0 bg-gray-50 rounded-lg px-3 py-2 text-sm focus:outline-none border border-gray-200">
@@ -53,10 +49,7 @@
                     <option value="ghanzi">Ghanzi</option>
                     <option value="kasane">Kasane</option>
                 </select>
-                <button id="search-btn" class="bg-green-600 text-white rounded-lg px-4 sm:px-6 py-2 font-semibold text-sm hover:bg-green-700 transition shrink-0">
-                    <i class="fa-solid fa-magnifying-glass sm:hidden"></i>
-                    <span class="hidden sm:inline">Search</span>
-                </button>
+                <button id="search-btn" class="bg-green-600 text-white rounded-lg px-4 sm:px-6 py-2 font-semibold text-sm hover:bg-green-700 transition shrink-0">Search</button>
             </div>
             <select id="location-select-mobile" class="sm:hidden mt-2 w-full bg-white rounded-lg px-3 py-2 text-sm focus:outline-none border border-gray-200 shadow-md">
                 <option value="all">All Locations</option>
@@ -75,7 +68,6 @@
         </div>
     </div>
 
-    <!-- MAIN: Scrollable content -->
     <main class="flex-1 overflow-y-auto max-w-7xl mx-auto px-4 pb-20 w-full">
         <div class="flex justify-between items-end mb-4 sm:mb-6">
             <h2 class="text-lg sm:text-xl font-bold text-gray-900">Live Marketplace</h2>
@@ -101,20 +93,6 @@
             if (token && loggedInUser) {
                 const tokenPayload = JSON.parse(atob(token.split('.')[1]));
                 loggedInUser.userId = tokenPayload.userId;
-
-                navActions.innerHTML = `
-                    <a href="profile.html" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition" title="My Profile">
-                        <i class="fa-solid fa-user text-sm"></i>
-                    </a>
-                    <div class="text-right hidden sm:block">
-                        <p class="text-xs font-bold text-gray-900">${loggedInUser.name}</p>
-                        <button id="logout-btn" class="text-[11px] text-red-500 font-semibold hover:underline">Sign Out</button>
-                    </div>
-                    <button id="logout-btn-mobile" class="sm:hidden text-[11px] text-red-500 font-semibold">Sign Out</button>
-                    <a href="sell.html" class="bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition">Post Product</a>
-                `;
-                document.getElementById('logout-btn')?.addEventListener('click', () => { localStorage.clear(); window.location.reload(); });
-                document.getElementById('logout-btn-mobile')?.addEventListener('click', () => { localStorage.clear(); window.location.reload(); });
             }
 
             function fetchListings(searchTerm = '', locationTerm = 'all') {
@@ -131,14 +109,20 @@
             function renderListings(items) {
                 listingsGrid.innerHTML = items.length === 0 ? `<p class="col-span-full text-center text-gray-400 py-8">No matching entries.</p>` : '';
                 items.forEach(item => {
+                    // Logic: Only show WhatsApp if NOT owned by current user
+                    const isMyListing = loggedInUser && item.userId === loggedInUser.userId;
+                    const whatsappBtn = !isMyListing ? 
+                        `<a href="https://wa.me/${item.phone}" target="_blank" onclick="event.stopPropagation()" class="text-green-500 text-lg"><i class="fa-brands fa-whatsapp"></i></a>` 
+                        : '';
+
                     const cardHtml = `
                         <div onclick="window.location.href='listing.html?id=${item._id}'" class="bg-white rounded-xl shadow-sm border p-3 cursor-pointer hover:shadow-md transition-shadow">
                             <div class="h-32 overflow-hidden relative rounded-lg"><img src="${item.images[0]}" class="w-full h-full object-cover"></div>
                             <h3 class="font-bold text-sm mt-2">${item.name}</h3>
                             <p class="text-green-600 font-bold text-sm">P${item.price}</p>
                             <div class="flex items-center justify-between mt-2">
-                                <button onclick="event.stopPropagation(); toggleWishlist(this, '${item._id}')" class="text-gray-400"><i class="fa-regular fa-heart"></i></button>
-                                <a href="https://wa.me/${item.phone}" target="_blank" onclick="event.stopPropagation()" class="text-green-500 text-lg"><i class="fa-brands fa-whatsapp"></i></a>
+                                <button onclick="event.stopPropagation(); toggleWishlist(this, '${item._id}')" class="text-gray-400 wishlist-btn"><i class="fa-regular fa-heart"></i></button>
+                                ${whatsappBtn}
                             </div>
                         </div>`;
                     listingsGrid.insertAdjacentHTML('beforeend', cardHtml);
@@ -158,7 +142,6 @@
             };
 
             searchBtn.addEventListener('click', () => fetchListings(searchInput.value, locationSelect.value));
-            
             locationSelect.addEventListener('change', () => fetchListings(searchInput.value, locationSelect.value));
             locationSelectMobile.addEventListener('change', () => {
                 locationSelect.value = locationSelectMobile.value;
