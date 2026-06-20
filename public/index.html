@@ -104,18 +104,25 @@
                 });
             }
 
-            function fetchListings(searchTerm = '', locationTerm = 'all') {
-                const url = `/api/listings?search=${encodeURIComponent(searchTerm)}&location=${encodeURIComponent(locationTerm)}`;
+          function fetchListings(searchTerm = '', locationTerm = 'all') {
+    const url = `/api/listings?search=${encodeURIComponent(searchTerm)}&location=${encodeURIComponent(locationTerm)}`;
 
-                fetch(url)
-                    .then(res => res.json())
-                    .then(payload => {
-                        resultsCount.textContent = `${payload.length} item(s) available`;
-                        renderListings(payload);
-                    })
-                    .catch(err => console.error("Error fetching listings:", err));
-            }
-
+    fetch(url)
+        .then(res => {
+            if (!res.ok) throw new Error(`Server returned status ${res.status}`);
+            return res.json();
+        })
+        .then(payload => {
+            // Ensure payload is an array before reading its length
+            const items = Array.isArray(payload) ? payload : [];
+            resultsCount.textContent = `${items.length} item(s) available`;
+            renderListings(items);
+        })
+        .catch(err => {
+            console.error("Error fetching listings:", err);
+            resultsCount.textContent = "Error loading marketplace entries.";
+        });
+}
             function timeAgo(dateString) {
                 if (!dateString) return '';
                 const date = new Date(dateString);
