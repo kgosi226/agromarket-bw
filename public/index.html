@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style> @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap'); body { font-family: 'Inter', sans-serif; } </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
 
     <nav class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -25,7 +25,7 @@
         </div>
     </nav>
 
-    <div class="bg-green-800 pb-12 sm:pb-24 pt-6 sm:pt-12 relative">
+    <div class="bg-green-800 pb-12 sm:pb-24 pt-6 sm:pt-12 relative flex-none">
         <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1500937386664-56d1dfef4e78?auto=format&fit=crop&w=2000&q=20')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
         <div class="max-w-7xl mx-auto px-4 relative z-10 text-center">
             <h1 class="text-2xl sm:text-4xl font-bold text-white mb-1 sm:mb-2">Direct from local farms.</h1>
@@ -33,7 +33,7 @@
         </div>
     </div>
 
-    <div class="max-w-4xl mx-auto px-4 -mt-6 sm:-mt-10 relative z-20 mb-6 sm:mb-12">
+    <div class="max-w-4xl mx-auto px-4 -mt-6 sm:-mt-10 relative z-20 mb-6 sm:mb-12 flex-none">
         <div class="bg-white rounded-xl shadow-md p-2 sm:p-3 flex flex-row gap-2 border border-gray-150">
             <input type="text" id="search-input" placeholder="Search..." class="flex-1 min-w-0 bg-gray-50 rounded-lg px-3 py-2 text-sm focus:outline-none border border-gray-200">
             <select id="location-select" class="hidden sm:block bg-gray-50 rounded-lg px-4 py-2 text-sm focus:outline-none border border-gray-200">
@@ -55,7 +55,7 @@
         </select>
     </div>
 
-    <main class="max-w-7xl mx-auto px-4 pb-20">
+    <main class="max-w-7xl mx-auto px-4 pb-20 flex-1 overflow-y-auto w-full">
         <div class="flex justify-between items-end mb-4 sm:mb-6">
             <h2 class="text-lg sm:text-xl font-bold text-gray-900">Live Marketplace</h2>
             <div id="results-count" class="text-xs font-medium text-gray-400">Syncing...</div>
@@ -77,9 +77,7 @@
             const profileStr = localStorage.getItem('user_profile');
             let loggedInUser = profileStr ? JSON.parse(profileStr) : null;
 
-            // Simple active token check to see if we should adjust top navigation display layouts
             if (token && loggedInUser) {
-                // Decode token manually to fetch userId safely
                 const tokenPayload = JSON.parse(atob(token.split('.')[1]));
                 loggedInUser.userId = tokenPayload.userId;
 
@@ -107,7 +105,6 @@
             }
 
             function fetchListings(searchTerm = '', locationTerm = 'all') {
-
                 const url = `/api/listings?search=${encodeURIComponent(searchTerm)}&location=${encodeURIComponent(locationTerm)}`;
 
                 fetch(url)
@@ -119,7 +116,6 @@
                     .catch(err => console.error("Error fetching listings:", err));
             }
 
-            // Converts a date into a friendly "X ago" string for card badges
             function timeAgo(dateString) {
                 if (!dateString) return '';
                 const date = new Date(dateString);
@@ -151,15 +147,21 @@
                     const message = `Dumela! I saw your ${item.name} on AgroMarket. Still available?`;
                     const whatsappUrl = `https://wa.me/${item.phone}?text=${encodeURIComponent(message)}`;
 
-                    // SECURITY CHECK: Show delete button ONLY if the card's userId matches the logged-in user's account ID
                     const isOwner = loggedInUser && item.userId === loggedInUser.userId;
+                    
                     const deleteBtnHtml = isOwner ? `
                         <button onclick="event.stopPropagation(); deleteListing('${item._id}')" class="w-9 h-9 bg-red-50 text-red-500 rounded-full hover:bg-red-500 hover:text-white flex items-center justify-center transition-colors">
                             <i class="fa-solid fa-trash-can text-xs"></i>
                         </button>
                     ` : '';
 
-                    // Use first photo from the new images array if present, fall back to legacy single image field
+                    // 👉 NEW: Wishlist button HTML
+                    const wishlistBtnHtml = loggedInUser && !isOwner ? `
+                        <button onclick="event.stopPropagation(); addToWishlist(this, '${item._id}')" class="w-9 h-9 bg-gray-50 text-gray-400 rounded-full hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-colors" title="Save to Wishlist">
+                            <i class="fa-solid fa-heart text-sm"></i>
+                        </button>
+                    ` : '';
+
                     const thumbnail = (item.images && item.images.length > 0) ? item.images[0] : item.image;
                     const postedBadge = item.createdAt ? `<span class="absolute top-2 right-2 bg-black/50 text-white text-[10px] font-medium px-2 py-0.5 rounded-full">${timeAgo(item.createdAt)}</span>` : '';
 
@@ -177,7 +179,13 @@
                                 <div class="text-xs text-gray-600 mb-4"><i class="fa-solid fa-clock text-gray-400 mr-1.5"></i>${item.readyDate}</div>
                                 <div class="mt-auto pt-3 border-t border-gray-50 flex items-center justify-between">
                                     <div><span class="text-lg font-bold text-gray-900">P${item.price}</span><span class="text-[10px] text-gray-400">/${item.unit}</span></div>
-                                    <div class="flex gap-1.5">${deleteBtnHtml}${!isOwner ? `<a href="${whatsappUrl}" target="_blank" onclick="event.stopPropagation()" class="w-9 h-9 bg-green-50 text-green-600 rounded-full hover:bg-green-600 hover:text-white flex items-center justify-center transition-colors"><i class="fa-brands fa-whatsapp text-lg"></i></a>` : ''}</div>
+                                    
+                                    <div class="flex gap-1.5">
+                                        ${wishlistBtnHtml}
+                                        ${deleteBtnHtml}
+                                        ${!isOwner ? `<a href="${whatsappUrl}" target="_blank" onclick="event.stopPropagation()" class="w-9 h-9 bg-green-50 text-green-600 rounded-full hover:bg-green-600 hover:text-white flex items-center justify-center transition-colors"><i class="fa-brands fa-whatsapp text-lg"></i></a>` : ''}
+                                    </div>
+
                                 </div>
                             </div>
                         </div>`;
@@ -185,11 +193,35 @@
                 });
             }
 
+            // 👉 NEW: The JavaScript function to handle clicking the heart
+            window.addToWishlist = function(buttonElement, listingId) {
+                if (!loggedInUser) return;
+
+                fetch('/api/wishlist/add', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` 
+                    },
+                    body: JSON.stringify({
+                        userId: loggedInUser.userId,
+                        listingId: listingId
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    // Visually turn the heart red to show it worked
+                    buttonElement.classList.remove('bg-gray-50', 'text-gray-400');
+                    buttonElement.classList.add('bg-red-50', 'text-red-500');
+                })
+                .catch(err => console.error("Error adding to wishlist:", err));
+            }
+
             window.deleteListing = function(id) {
                 if (confirm("Remove this post permanently?")) {
                     fetch(`/api/listings/${id}`, {
                         method: 'DELETE',
-                        headers: { 'Authorization': `Bearer ${token}` } // Send JWT validation key
+                        headers: { 'Authorization': `Bearer ${token}` }
                     })
                     .then(res => res.json().then(data => ({ ok: res.ok, data })))
                     .then(({ ok, data }) => {
@@ -201,21 +233,18 @@
 
             searchBtn.addEventListener('click', () => fetchListings(searchInput.value, locationSelect.value));
 
-            // Live search: fires automatically as you type, with a short debounce delay
             let searchDebounceTimer;
             searchInput.addEventListener('input', () => {
                 clearTimeout(searchDebounceTimer);
                 searchDebounceTimer = setTimeout(() => {
                     fetchListings(searchInput.value, locationSelect.value);
-                }, 400); // waits 400ms after you stop typing before searching
+                }, 400);
             });
 
-            // Also re-fetch instantly when the location dropdown changes
             locationSelect.addEventListener('change', () => {
                 fetchListings(searchInput.value, locationSelect.value);
             });
 
-            // Mobile location dropdown stays in sync with the desktop one
             const locationSelectMobile = document.getElementById('location-select-mobile');
             locationSelectMobile.addEventListener('change', () => {
                 locationSelect.value = locationSelectMobile.value;

@@ -3,7 +3,9 @@ const mongoose = require('mongoose');
 const userSchema = new mongoose.Schema({
     name: String,
     phone: { type: String, unique: true },
-    password: String
+    password: String,
+    // 👉 NEW: Reference array tracking listing IDs favorited by the user
+    wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Listing' }]
 });
 
 const listingSchema = new mongoose.Schema({

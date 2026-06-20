@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
 
-// 👉 Perfectly imports your exact User and Listing models
+// Perfectly imports your exact User and Listing models
 const { Listing, User } = require('./models');
 
 const app = express();
@@ -219,7 +219,39 @@ app.put('/api/users/me/password', verifyToken, async (req, res) => {
     }
 });
 
-// --- 3. AUTH ROUTES ---
+// --- 3. WISHLIST API ROUTES ---
+
+// Add item to wishlist ($addToSet prevents duplication errors if double-clicked)
+app.post('/api/wishlist/add', verifyToken, async (req, res) => {
+    try {
+        const { listingId } = req.body;
+        
+        await User.findByIdAndUpdate(req.userId, {
+            $addToSet: { wishlist: listingId }
+        });
+
+        res.status(200).json({ message: "Item added to wishlist successfully." });
+    } catch (error) {
+        console.error("❌ Wishlist update error:", error);
+        res.status(500).json({ error: "Failed to add item to wishlist." });
+    }
+});
+
+// Fetch active populated wishlist elements directly linked to authenticated user profile
+app.get('/api/wishlist', verifyToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.userId).populate('wishlist');
+        if (!user) {
+            return res.status(404).json({ error: "User profile not found." });
+        }
+        res.status(200).json(user.wishlist);
+    } catch (error) {
+        console.error("❌ Error fetching wishlist items:", error);
+        res.status(500).json({ error: "Failed to retrieve wishlist items." });
+    }
+});
+
+// --- 4. AUTH ROUTES ---
 
 // Register
 app.post('/api/auth/register', async (req, res) => {
@@ -292,12 +324,12 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// --- 4. CATCH-ALL ROUTE ---
+// --- 5. CATCH-ALL ROUTE ---
 app.get(/^(?!\/api).*/, (req, res) => {
     res.sendFile(path.join(publicPath, 'index.html'));
 });
 
-// --- 5. CONNECT TO DB & START SERVER ---
+// --- 6. CONNECT TO DB & START SERVER ---
 const PORT = process.env.PORT || 10000;
 
 mongoose.connect(process.env.MONGO_URI)
