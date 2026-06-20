@@ -16,8 +16,9 @@ const listingSchema = new mongoose.Schema({
     price: Number,
     unit: String,
     phone: String,
-    image: String
-});
+    image: String,           // kept for backward compatibility with old listings
+    images: [String]         // new: up to 4 photos per listing
+}, { timestamps: true });    // adds createdAt / updatedAt automatically
 
 module.exports = {
     User: mongoose.model('User', userSchema),

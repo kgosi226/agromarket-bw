@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listing | AgroMarket</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style> @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap'); body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <nav class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <a href="index.html" class="flex items-center gap-2">
+                    <div class="bg-green-600 text-white p-2 rounded-lg"><i class="fa-solid fa-leaf"></i></div>
+                    <span class="text-xl font-bold text-gray-900">AgroMarket</span>
+                </a>
+                <a href="index.html" class="text-sm font-medium text-gray-600 hover:text-gray-900">
+                    <i class="fa-solid fa-arrow-left mr-2"></i>Back to Market
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main id="listing-content" class="max-w-5xl mx-auto px-4 py-8 sm:py-12">
+        <p class="text-center text-gray-400 py-20">Loading listing...</p>
+    </main>
+
+    <script>
+        // Get listing ID from the URL: listing.html?id=...
+        const params = new URLSearchParams(window.location.search);
+        const listingId = params.get('id');
+
+        const content = document.getElementById('listing-content');
+
+        const token = localStorage.getItem('agro_token');
+        const profileStr = localStorage.getItem('user_profile');
+        let loggedInUser = profileStr ? JSON.parse(profileStr) : null;
+        if (token && loggedInUser) {
+            const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+            loggedInUser.userId = tokenPayload.userId;
+        }
+
+        // Converts a date into a friendly "Posted X ago" string
+        function timeAgo(dateString) {
+            const date = new Date(dateString);
+            const seconds = Math.floor((new Date() - date) / 1000);
+
+            const intervals = [
+                { label: 'year', secs: 31536000 },
+                { label: 'month', secs: 2592000 },
+                { label: 'day', secs: 86400 },
+                { label: 'hour', secs: 3600 },
+                { label: 'minute', secs: 60 }
+            ];
+
+            for (const interval of intervals) {
+                const count = Math.floor(seconds / interval.secs);
+                if (count >= 1) {
+                    return `Posted ${count} ${interval.label}${count > 1 ? 's' : ''} ago`;
+                }
+            }
+            return 'Posted just now';
+        }
+
+        if (!listingId) {
+            content.innerHTML = `<p class="text-center text-gray-400 py-20">No listing specified.</p>`;
+        } else {
+            fetch(`/api/listings/${listingId}`)
+                .then(res => res.json().then(data => ({ ok: res.ok, data })))
+                .then(({ ok, data }) => {
+                    if (!ok) {
+                        content.innerHTML = `<p class="text-center text-gray-400 py-20">Listing not found — it may have been removed.</p>`;
+                        return;
+                    }
+
+                    renderListing(data);
+                })
+                .catch(err => {
+                    console.error(err);
+                    content.innerHTML = `<p class="text-center text-gray-400 py-20">Could not load this listing.</p>`;
+                });
+        }
+
+        function renderListing(item) {
+            // Use the new images array if present, fall back to the single legacy image field
+            const photos = (item.images && item.images.length > 0) ? item.images : (item.image ? [item.image] : []);
+            const mainPhoto = photos[0] || '';
+
+            const message = `Dumela! I saw your ${item.name} on AgroMarket. Still available?`;
+            const whatsappUrl = `https://wa.me/${item.phone}?text=${encodeURIComponent(message)}`;
+
+            const isOwner = loggedInUser && item.userId === loggedInUser.userId;
+            const postedLabel = item.createdAt ? timeAgo(item.createdAt) : '';
+
+            const thumbnailsHtml = photos.length > 1
+                ? `<div class="grid grid-cols-4 gap-2 mt-2">
+                        ${photos.map((url, i) => `
+                            <button onclick="document.getElementById('main-photo').src='${url}'" class="aspect-square rounded-lg overflow-hidden border border-gray-200 hover:border-green-500 transition">
+                                <img src="${url}" class="w-full h-full object-cover">
+                            </button>
+                        `).join('')}
+                   </div>`
+                : '';
+
+            const deleteBtnHtml = isOwner ? `
+                <button onclick="deleteThisListing('${item._id}')" class="w-full mt-3 border border-red-200 text-red-500 font-semibold py-2.5 rounded-xl hover:bg-red-50 transition text-sm">
+                    <i class="fa-solid fa-trash-can mr-2"></i>Delete Listing
+                </button>
+            ` : '';
+
+            content.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Photo gallery -->
+                    <div>
+                        <div class="aspect-square rounded-2xl overflow-hidden bg-gray-100 border border-gray-200">
+                            ${mainPhoto
+                                ? `<img id="main-photo" src="${mainPhoto}" alt="${item.name}" class="w-full h-full object-cover">`
+                                : `<div id="main-photo" class="w-full h-full flex items-center justify-center text-gray-300"><i class="fa-solid fa-image text-5xl"></i></div>`
+                            }
+                        </div>
+                        ${thumbnailsHtml}
+                    </div>
+
+                    <!-- Details -->
+                    <div>
+                        <span class="inline-block bg-green-50 text-green-700 text-xs font-bold px-3 py-1 rounded-full mb-3">${item.category || 'Produce'}</span>
+                        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 capitalize mb-1">${item.name}</h1>
+                        <p class="text-xs text-gray-400 mb-4">${postedLabel}</p>
+
+                        <div class="flex items-baseline gap-1 mb-6">
+                            <span class="text-3xl font-bold text-gray-900">P${item.price}</span>
+                            <span class="text-sm text-gray-400">/${item.unit}</span>
+                        </div>
+
+                        <div class="space-y-3 mb-6 border-t border-b border-gray-100 py-4">
+                            <div class="flex items-center text-sm text-gray-600">
+                                <i class="fa-solid fa-location-dot text-gray-400 w-5"></i>
+                                <span class="capitalize">${item.location}</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600">
+                                <i class="fa-solid fa-clock text-gray-400 w-5"></i>
+                                <span>${item.readyDate || 'Not specified'}</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600">
+                                <i class="fa-solid fa-boxes-stacked text-gray-400 w-5"></i>
+                                <span>${item.quantity} available</span>
+                            </div>
+                        </div>
+
+                        <a href="${whatsappUrl}" target="_blank" class="w-full bg-green-600 text-white font-semibold py-3.5 rounded-xl hover:bg-green-700 transition flex items-center justify-center gap-2">
+                            <i class="fa-brands fa-whatsapp text-lg"></i> Contact Seller on WhatsApp
+                        </a>
+
+                        ${deleteBtnHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        window.deleteThisListing = function(id) {
+            if (confirm("Remove this listing permanently?")) {
+                fetch(`/api/listings/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                .then(res => res.json().then(data => ({ ok: res.ok, data })))
+                .then(({ ok, data }) => {
+                    if (ok) {
+                        alert('Listing deleted.');
+                        window.location.href = 'index.html';
+                    } else {
+                        alert(data.error);
+                    }
+                });
+            }
+        };
+    </script>
+</body>
+</html>

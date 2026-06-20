@@ -119,6 +119,27 @@
                     .catch(err => console.error("Error fetching listings:", err));
             }
 
+            // Converts a date into a friendly "X ago" string for card badges
+            function timeAgo(dateString) {
+                if (!dateString) return '';
+                const date = new Date(dateString);
+                const seconds = Math.floor((new Date() - date) / 1000);
+
+                const intervals = [
+                    { label: 'y', secs: 31536000 },
+                    { label: 'mo', secs: 2592000 },
+                    { label: 'd', secs: 86400 },
+                    { label: 'h', secs: 3600 },
+                    { label: 'm', secs: 60 }
+                ];
+
+                for (const interval of intervals) {
+                    const count = Math.floor(seconds / interval.secs);
+                    if (count >= 1) return `${count}${interval.label} ago`;
+                }
+                return 'just now';
+            }
+
             function renderListings(items) {
                 listingsGrid.innerHTML = '';
                 if(items.length === 0) {
@@ -133,16 +154,21 @@
                     // SECURITY CHECK: Show delete button ONLY if the card's userId matches the logged-in user's account ID
                     const isOwner = loggedInUser && item.userId === loggedInUser.userId;
                     const deleteBtnHtml = isOwner ? `
-                        <button onclick="deleteListing('${item._id}')" class="w-9 h-9 bg-red-50 text-red-500 rounded-full hover:bg-red-500 hover:text-white flex items-center justify-center transition-colors">
+                        <button onclick="event.stopPropagation(); deleteListing('${item._id}')" class="w-9 h-9 bg-red-50 text-red-500 rounded-full hover:bg-red-500 hover:text-white flex items-center justify-center transition-colors">
                             <i class="fa-solid fa-trash-can text-xs"></i>
                         </button>
                     ` : '';
 
+                    // Use first photo from the new images array if present, fall back to legacy single image field
+                    const thumbnail = (item.images && item.images.length > 0) ? item.images[0] : item.image;
+                    const postedBadge = item.createdAt ? `<span class="absolute top-2 right-2 bg-black/50 text-white text-[10px] font-medium px-2 py-0.5 rounded-full">${timeAgo(item.createdAt)}</span>` : '';
+
                     const cardHtml = `
-                        <div class="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 flex flex-col">
+                        <div onclick="window.location.href='listing.html?id=${item._id}'" class="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 flex flex-col cursor-pointer hover:shadow-md transition-shadow">
                             <div class="h-44 overflow-hidden relative">
                                 <span class="absolute top-2 left-2 bg-white/90 text-gray-800 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">${item.category}</span>
-                                <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover">
+                                ${postedBadge}
+                                <img src="${thumbnail}" alt="${item.name}" class="w-full h-full object-cover">
                             </div>
                             <div class="p-4 flex-1 flex flex-col">
                                 <h3 class="font-bold text-gray-900 capitalize mb-0.5">${item.name}</h3>
@@ -151,7 +177,7 @@
                                 <div class="text-xs text-gray-600 mb-4"><i class="fa-solid fa-clock text-gray-400 mr-1.5"></i>${item.readyDate}</div>
                                 <div class="mt-auto pt-3 border-t border-gray-50 flex items-center justify-between">
                                     <div><span class="text-lg font-bold text-gray-900">P${item.price}</span><span class="text-[10px] text-gray-400">/${item.unit}</span></div>
-                                    <div class="flex gap-1.5">${deleteBtnHtml}<a href="${whatsappUrl}" target="_blank" class="w-9 h-9 bg-green-50 text-green-600 rounded-full hover:bg-green-600 hover:text-white flex items-center justify-center transition-colors"><i class="fa-brands fa-whatsapp text-lg"></i></a></div>
+                                    <div class="flex gap-1.5">${deleteBtnHtml}<a href="${whatsappUrl}" target="_blank" onclick="event.stopPropagation()" class="w-9 h-9 bg-green-50 text-green-600 rounded-full hover:bg-green-600 hover:text-white flex items-center justify-center transition-colors"><i class="fa-brands fa-whatsapp text-lg"></i></a></div>
                                 </div>
                             </div>
                         </div>`;

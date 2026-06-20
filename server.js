@@ -20,7 +20,7 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Multer stores the file in memory so we can stream it straight to Cloudinary
+// Multer stores files in memory so we can stream them straight to Cloudinary
 const upload = multer({ storage: multer.memoryStorage() });
 
 // --- JWT auth middleware ---
@@ -39,6 +39,20 @@ function verifyToken(req, res, next) {
     } catch (err) {
         return res.status(401).json({ error: 'Invalid or expired token.' });
     }
+}
+
+// Helper: upload a single file buffer to Cloudinary, returns the secure_url
+function uploadToCloudinary(fileBuffer) {
+    return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+            { folder: 'agromarket' },
+            (error, result) => {
+                if (error) reject(error);
+                else resolve(result.secure_url);
+            }
+        );
+        stream.end(fileBuffer);
+    });
 }
 
 // --- 1. STATIC FILES ---
@@ -61,7 +75,7 @@ app.get('/api/listings', async (req, res) => {
             query.location = { $regex: `^${location}$`, $options: 'i' }; // exact match, case-insensitive
         }
 
-        const data = await Listing.find(query);
+        const data = await Listing.find(query).sort({ createdAt: -1 });
         res.status(200).json(data);
     } catch (error) {
         console.error("❌ Error fetching data:", error);
@@ -69,8 +83,24 @@ app.get('/api/listings', async (req, res) => {
     }
 });
 
-// Create a new listing (with optional image upload to Cloudinary)
-app.post('/api/listings', verifyToken, upload.single('image'), async (req, res) => {
+// Get a single listing by ID (for the detail view page)
+app.get('/api/listings/:id', async (req, res) => {
+    try {
+        const listing = await Listing.findById(req.params.id);
+
+        if (!listing) {
+            return res.status(404).json({ error: "Listing not found." });
+        }
+
+        res.status(200).json(listing);
+    } catch (error) {
+        console.error("❌ Error fetching listing:", error);
+        res.status(500).json({ error: "Failed to fetch listing." });
+    }
+});
+
+// Create a new listing (with up to 4 photos uploaded to Cloudinary)
+app.post('/api/listings', verifyToken, upload.array('images', 4), async (req, res) => {
     try {
         const { category, name, location, price, unit, quantity, readyDate } = req.body;
 
@@ -84,21 +114,13 @@ app.post('/api/listings', verifyToken, upload.single('image'), async (req, res) 
             return res.status(401).json({ error: "User not found." });
         }
 
-        let imageUrl = '';
+        let imageUrls = [];
 
-        if (req.file) {
-            // Upload the image buffer to Cloudinary
-            const uploadResult = await new Promise((resolve, reject) => {
-                const stream = cloudinary.uploader.upload_stream(
-                    { folder: 'agromarket' },
-                    (error, result) => {
-                        if (error) reject(error);
-                        else resolve(result);
-                    }
-                );
-                stream.end(req.file.buffer);
-            });
-            imageUrl = uploadResult.secure_url;
+        if (req.files && req.files.length > 0) {
+            // Upload all photo buffers to Cloudinary in parallel
+            imageUrls = await Promise.all(
+                req.files.map(file => uploadToCloudinary(file.buffer))
+            );
         }
 
         const newListing = await Listing.create({
@@ -111,7 +133,8 @@ app.post('/api/listings', verifyToken, upload.single('image'), async (req, res) 
             price: Number(price),
             unit,
             phone: user.phone,
-            image: imageUrl
+            image: imageUrls[0] || '',   // first photo also stored here for backward compatibility (card thumbnails)
+            images: imageUrls
         });
 
         res.status(201).json(newListing);
@@ -195,6 +218,7 @@ app.put('/api/users/me/password', verifyToken, async (req, res) => {
         res.status(500).json({ error: "Failed to change password." });
     }
 });
+
 // --- 3. AUTH ROUTES ---
 
 // Register

@@ -87,15 +87,16 @@
 
                 <!-- IMAGE UPLOAD ASSIST BLOCK -->
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Upload Photo of Produce/Livestock</label>
-                    <div class="w-full border-2 border-dashed border-gray-300 rounded-xl p-6 bg-gray-50 hover:bg-gray-100 transition relative flex flex-col items-center justify-center text-center">
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Upload Photos (up to 4)</label>
+                    <div id="upload-dropzone" class="w-full border-2 border-dashed border-gray-300 rounded-xl p-6 bg-gray-50 hover:bg-gray-100 transition relative flex flex-col items-center justify-center text-center">
                         <i class="fa-solid fa-cloud-arrow-up text-3xl text-gray-400 mb-2"></i>
-                        <span class="text-sm font-medium text-gray-600 mb-1">Click to select photo asset</span>
-                        <span class="text-xs text-gray-400">Supports JPG, PNG or WEBP up to 5MB</span>
+                        <span class="text-sm font-medium text-gray-600 mb-1">Click to select up to 4 photos</span>
+                        <span class="text-xs text-gray-400">Supports JPG, PNG or WEBP up to 5MB each</span>
                         <!-- The hidden native input that drives file picking -->
-                        <input type="file" id="image-file" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer">
+                        <input type="file" id="image-file" accept="image/*" multiple class="absolute inset-0 opacity-0 cursor-pointer">
                     </div>
-                    <!-- Status element to give feedback when user picks a file -->
+                    <!-- Thumbnail previews of selected photos -->
+                    <div id="photo-previews" class="grid grid-cols-4 gap-2 mt-3"></div>
                     <p id="file-chosen-name" class="text-xs font-semibold text-green-600 mt-2 hidden"></p>
                 </div>
 
@@ -118,15 +119,64 @@
             window.location.href = 'login.html';
         }
 
+        const MAX_PHOTOS = 4;
         const fileInput = document.getElementById('image-file');
         const fileLabel = document.getElementById('file-chosen-name');
+        const previewsContainer = document.getElementById('photo-previews');
 
-        // File Selection Feedback Handler
-        fileInput.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                fileLabel.textContent = `Selected File: ${this.files[0].name}`;
+        // Holds the actual File objects the user has picked, across multiple selections
+        let selectedFiles = [];
+
+        function renderPreviews() {
+            previewsContainer.innerHTML = '';
+            selectedFiles.forEach((file, index) => {
+                const url = URL.createObjectURL(file);
+                const wrapper = document.createElement('div');
+                wrapper.className = 'relative aspect-square rounded-lg overflow-hidden border border-gray-200 bg-gray-100';
+                wrapper.innerHTML = `
+                    <img src="${url}" class="w-full h-full object-cover">
+                    <button type="button" data-index="${index}" class="remove-photo-btn absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                `;
+                previewsContainer.appendChild(wrapper);
+            });
+
+            // Wire up remove buttons
+            previewsContainer.querySelectorAll('.remove-photo-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.dataset.index, 10);
+                    selectedFiles.splice(idx, 1);
+                    renderPreviews();
+                    updateLabel();
+                });
+            });
+        }
+
+        function updateLabel() {
+            if (selectedFiles.length > 0) {
+                fileLabel.textContent = `${selectedFiles.length} photo(s) selected`;
                 fileLabel.classList.remove('hidden');
+            } else {
+                fileLabel.classList.add('hidden');
             }
+        }
+
+        // File Selection Handler — adds newly picked files, up to the max
+        fileInput.addEventListener('change', function() {
+            const newFiles = Array.from(this.files || []);
+            const combined = [...selectedFiles, ...newFiles].slice(0, MAX_PHOTOS);
+
+            if (selectedFiles.length + newFiles.length > MAX_PHOTOS) {
+                alert(`You can upload up to ${MAX_PHOTOS} photos. Only the first ${MAX_PHOTOS} were kept.`);
+            }
+
+            selectedFiles = combined;
+            renderPreviews();
+            updateLabel();
+
+            // Reset the native input so picking the same file again still fires 'change'
+            this.value = '';
         });
 
         // Form Submit Handler
@@ -144,27 +194,27 @@
             formData.append('quantity', document.getElementById('quantity').value);
             formData.append('readyDate', document.getElementById('readyDate').value);
 
-            // Append the raw selected file binary if it exists
-            if (fileInput.files[0]) {
-                formData.append('image', fileInput.files[0]);
-            }
+            // Append each selected photo under the 'images' field (matches upload.array('images', 4) on the server)
+            selectedFiles.forEach(file => {
+                formData.append('images', file);
+            });
 
-           fetch('/api/listings', {
-    method: 'POST',
-    headers: { 
-        'Authorization': `Bearer ${token}` 
-    },
-    body: formData
-})
-        .then(res => res.json().then(data => ({ ok: res.ok, data })))
-.then(({ ok, data }) => {
-    if (ok) {
-        alert('Listing successfully created under your profile!');
-        window.location.href = 'index.html';
-    } else {
-        alert('Error: ' + data.error);
-    }
-})
+            fetch('/api/listings', {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: formData
+            })
+            .then(res => res.json().then(data => ({ ok: res.ok, data })))
+            .then(({ ok, data }) => {
+                if (ok) {
+                    alert('Listing successfully created under your profile!');
+                    window.location.href = 'index.html';
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
             .catch(err => {
                 console.error(err);
                 alert('Could not stream packet configurations to backend.');
