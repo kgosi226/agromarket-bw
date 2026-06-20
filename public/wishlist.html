@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Wishlist | AgroMarket</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <nav class="bg-white border-b p-4 flex items-center gap-4">
+        <a href="index.html" class="text-gray-600"><i class="fa-solid fa-arrow-left"></i></a>
+        <h1 class="font-bold text-lg">My Saved Items</h1>
+    </nav>
+
+    <main class="max-w-7xl mx-auto p-4">
+        <div id="wishlist-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <!-- Items load here -->
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const grid = document.getElementById('wishlist-grid');
+            const token = localStorage.getItem('agro_token');
+
+            fetch('/api/wishlist', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(res => res.json())
+            .then(items => {
+                if (items.length === 0) {
+                    grid.innerHTML = `<p class="col-span-full text-center text-gray-400 py-10">No saved items yet.</p>`;
+                    return;
+                }
+                
+                items.forEach(item => {
+                    const thumb = (item.images && item.images.length > 0) ? item.images[0] : item.image;
+                    grid.insertAdjacentHTML('beforeend', `
+                        <div onclick="window.location.href='listing.html?id=${item._id}'" class="bg-white rounded-xl shadow-sm border p-3 cursor-pointer hover:shadow-md">
+                            <img src="${thumb}" class="w-full h-32 object-cover rounded-lg">
+                            <h3 class="font-bold text-sm mt-2 capitalize">${item.name}</h3>
+                            <p class="text-green-600 font-bold text-sm">P${item.price}</p>
+                        </div>
+                    `);
+                });
+            })
+            .catch(err => {
+                grid.innerHTML = `<p class="text-red-500 text-center">Failed to load wishlist.</p>`;
+            });
+        });
+    </script>
+</body>
+</html>
