@@ -177,7 +177,7 @@
                                 <div class="text-xs text-gray-600 mb-4"><i class="fa-solid fa-clock text-gray-400 mr-1.5"></i>${item.readyDate}</div>
                                 <div class="mt-auto pt-3 border-t border-gray-50 flex items-center justify-between">
                                     <div><span class="text-lg font-bold text-gray-900">P${item.price}</span><span class="text-[10px] text-gray-400">/${item.unit}</span></div>
-                                    <div class="flex gap-1.5">${deleteBtnHtml}<a href="${whatsappUrl}" target="_blank" onclick="event.stopPropagation()" class="w-9 h-9 bg-green-50 text-green-600 rounded-full hover:bg-green-600 hover:text-white flex items-center justify-center transition-colors"><i class="fa-brands fa-whatsapp text-lg"></i></a></div>
+                                    <div class="flex gap-1.5">${deleteBtnHtml}${!isOwner ? `<a href="${whatsappUrl}" target="_blank" onclick="event.stopPropagation()" class="w-9 h-9 bg-green-50 text-green-600 rounded-full hover:bg-green-600 hover:text-white flex items-center justify-center transition-colors"><i class="fa-brands fa-whatsapp text-lg"></i></a>` : ''}</div>
                                 </div>
                             </div>
                         </div>`;

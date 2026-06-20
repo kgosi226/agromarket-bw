@@ -150,9 +150,14 @@
                             </div>
                         </div>
 
-                        <a href="${whatsappUrl}" target="_blank" class="w-full bg-green-600 text-white font-semibold py-3.5 rounded-xl hover:bg-green-700 transition flex items-center justify-center gap-2">
-                            <i class="fa-brands fa-whatsapp text-lg"></i> Contact Seller on WhatsApp
-                        </a>
+                        ${isOwner
+                            ? `<div class="w-full bg-gray-50 border border-gray-200 text-gray-500 font-medium py-3.5 rounded-xl flex items-center justify-center gap-2 text-sm">
+                                   <i class="fa-solid fa-circle-check text-green-600"></i> This is your listing
+                               </div>`
+                            : `<a href="${whatsappUrl}" target="_blank" class="w-full bg-green-600 text-white font-semibold py-3.5 rounded-xl hover:bg-green-700 transition flex items-center justify-center gap-2">
+                                   <i class="fa-brands fa-whatsapp text-lg"></i> Contact Seller on WhatsApp
+                               </a>`
+                        }
 
                         ${deleteBtnHtml}
                     </div>
