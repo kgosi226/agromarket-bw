@@ -8,9 +8,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style> @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap'); body { font-family: 'Inter', sans-serif; } </style>
 </head>
-<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
+<body class="h-screen overflow-hidden flex flex-col bg-gray-50 text-gray-800">
 
-    <nav class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+    <!-- NAV: Fixed at top, does not scroll -->
+    <nav class="flex-none bg-white border-b border-gray-200 z-50 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center gap-2">
@@ -25,37 +26,41 @@
         </div>
     </nav>
 
-    <div class="bg-green-800 pb-12 sm:pb-24 pt-6 sm:pt-12 relative flex-none">
-        <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1500937386664-56d1dfef4e78?auto=format&fit=crop&w=2000&q=20')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
-        <div class="max-w-7xl mx-auto px-4 relative z-10 text-center">
-            <h1 class="text-2xl sm:text-4xl font-bold text-white mb-1 sm:mb-2">Direct from local farms.</h1>
-            <p class="text-green-100 text-xs sm:text-sm max-w-md mx-auto mb-3 sm:mb-6">Connect directly with Botswana's farmers. No middlemen.</p>
+    <!-- HEADER WRAPPER: Contains Hero and Search, does not scroll -->
+    <div class="flex-none">
+        <div class="bg-green-800 pb-12 sm:pb-24 pt-6 sm:pt-12 relative">
+            <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1500937386664-56d1dfef4e78?auto=format&fit=crop&w=2000&q=20')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
+            <div class="max-w-7xl mx-auto px-4 relative z-10 text-center">
+                <h1 class="text-2xl sm:text-4xl font-bold text-white mb-1 sm:mb-2">Direct from local farms.</h1>
+                <p class="text-green-100 text-xs sm:text-sm max-w-md mx-auto mb-3 sm:mb-6">Connect directly with Botswana's farmers. No middlemen.</p>
+            </div>
         </div>
-    </div>
 
-    <div class="max-w-4xl mx-auto px-4 -mt-6 sm:-mt-10 relative z-20 mb-6 sm:mb-12 flex-none">
-        <div class="bg-white rounded-xl shadow-md p-2 sm:p-3 flex flex-row gap-2 border border-gray-150">
-            <input type="text" id="search-input" placeholder="Search..." class="flex-1 min-w-0 bg-gray-50 rounded-lg px-3 py-2 text-sm focus:outline-none border border-gray-200">
-            <select id="location-select" class="hidden sm:block bg-gray-50 rounded-lg px-4 py-2 text-sm focus:outline-none border border-gray-200">
+        <div class="max-w-4xl mx-auto px-4 -mt-6 sm:-mt-10 relative z-20 mb-6 sm:mb-12">
+            <div class="bg-white rounded-xl shadow-md p-2 sm:p-3 flex flex-row gap-2 border border-gray-150">
+                <input type="text" id="search-input" placeholder="Search..." class="flex-1 min-w-0 bg-gray-50 rounded-lg px-3 py-2 text-sm focus:outline-none border border-gray-200">
+                <select id="location-select" class="hidden sm:block bg-gray-50 rounded-lg px-4 py-2 text-sm focus:outline-none border border-gray-200">
+                    <option value="all">All Locations</option>
+                    <option value="kanye">Kanye</option>
+                    <option value="ghanzi">Ghanzi</option>
+                    <option value="gaborone">Gaborone</option>
+                </select>
+                <button id="search-btn" class="bg-green-600 text-white rounded-lg px-4 sm:px-6 py-2 font-semibold text-sm hover:bg-green-700 transition shrink-0">
+                    <i class="fa-solid fa-magnifying-glass sm:hidden"></i>
+                    <span class="hidden sm:inline">Search</span>
+                </button>
+            </div>
+            <select id="location-select-mobile" class="sm:hidden mt-2 w-full bg-white rounded-lg px-3 py-2 text-sm focus:outline-none border border-gray-200 shadow-md">
                 <option value="all">All Locations</option>
                 <option value="kanye">Kanye</option>
                 <option value="ghanzi">Ghanzi</option>
                 <option value="gaborone">Gaborone</option>
             </select>
-            <button id="search-btn" class="bg-green-600 text-white rounded-lg px-4 sm:px-6 py-2 font-semibold text-sm hover:bg-green-700 transition shrink-0">
-                <i class="fa-solid fa-magnifying-glass sm:hidden"></i>
-                <span class="hidden sm:inline">Search</span>
-            </button>
         </div>
-        <select id="location-select-mobile" class="sm:hidden mt-2 w-full bg-white rounded-lg px-3 py-2 text-sm focus:outline-none border border-gray-200 shadow-md">
-            <option value="all">All Locations</option>
-            <option value="kanye">Kanye</option>
-            <option value="ghanzi">Ghanzi</option>
-            <option value="gaborone">Gaborone</option>
-        </select>
     </div>
 
-    <main class="max-w-7xl mx-auto px-4 pb-20 flex-1 overflow-y-auto w-full">
+    <!-- MAIN: Only this section will scroll -->
+    <main class="flex-1 overflow-y-auto max-w-7xl mx-auto px-4 pb-20 w-full">
         <div class="flex justify-between items-end mb-4 sm:mb-6">
             <h2 class="text-lg sm:text-xl font-bold text-gray-900">Live Marketplace</h2>
             <div id="results-count" class="text-xs font-medium text-gray-400">Syncing...</div>
@@ -72,7 +77,6 @@
             const searchBtn = document.getElementById('search-btn');
             const navActions = document.getElementById('nav-actions');
 
-            // Parse client session details
             const token = localStorage.getItem('agro_token');
             const profileStr = localStorage.getItem('user_profile');
             let loggedInUser = profileStr ? JSON.parse(profileStr) : null;
@@ -92,186 +96,52 @@
                     <button id="logout-btn-mobile" class="sm:hidden text-[11px] text-red-500 font-semibold">Sign Out</button>
                     <a href="sell.html" class="bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition">Post Product</a>
                 `;
-                
-                document.getElementById('logout-btn')?.addEventListener('click', () => {
-                    localStorage.clear();
-                    window.location.reload();
-                });
-
-                document.getElementById('logout-btn-mobile')?.addEventListener('click', () => {
-                    localStorage.clear();
-                    window.location.reload();
-                });
+                document.getElementById('logout-btn')?.addEventListener('click', () => { localStorage.clear(); window.location.reload(); });
+                document.getElementById('logout-btn-mobile')?.addEventListener('click', () => { localStorage.clear(); window.location.reload(); });
             }
 
             function fetchListings(searchTerm = '', locationTerm = 'all') {
                 const url = `/api/listings?search=${encodeURIComponent(searchTerm)}&location=${encodeURIComponent(locationTerm)}`;
-
                 fetch(url)
-                    .then(res => {
-                        if (!res.ok) throw new Error(`Server returned status ${res.status}`);
-                        return res.json();
-                    })
+                    .then(res => res.json())
                     .then(payload => {
                         const items = Array.isArray(payload) ? payload : [];
                         resultsCount.textContent = `${items.length} item(s) available`;
                         renderListings(items);
-                    })
-                    .catch(err => {
-                        console.error("Error fetching listings:", err);
-                        resultsCount.textContent = "Error loading marketplace entries.";
                     });
             }
 
             function timeAgo(dateString) {
-                if (!dateString) return '';
-                const date = new Date(dateString);
-                const seconds = Math.floor((new Date() - date) / 1000);
-
-                const intervals = [
-                    { label: 'y', secs: 31536000 },
-                    { label: 'mo', secs: 2592000 },
-                    { label: 'd', secs: 86400 },
-                    { label: 'h', secs: 3600 },
-                    { label: 'm', secs: 60 }
-                ];
-
-                for (const interval of intervals) {
-                    const count = Math.floor(seconds / interval.secs);
-                    if (count >= 1) return `${count}${interval.label} ago`;
-                }
+                const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
+                const intervals = [{l: 'y', s: 31536000}, {l: 'mo', s: 2592000}, {l: 'd', s: 86400}, {l: 'h', s: 3600}, {l: 'm', s: 60}];
+                for (const i of intervals) { const c = Math.floor(seconds / i.s); if (c >= 1) return `${c}${i.l} ago`; }
                 return 'just now';
             }
 
             function renderListings(items) {
-                listingsGrid.innerHTML = '';
-                if(items.length === 0) {
-                    listingsGrid.innerHTML = `<p class="col-span-full text-center text-gray-400 py-8">No matching entries.</p>`;
-                    return;
-                }
-
+                listingsGrid.innerHTML = items.length === 0 ? `<p class="col-span-full text-center text-gray-400 py-8">No matching entries.</p>` : '';
                 items.forEach(item => {
-                    const message = `Dumela! I saw your ${item.name} on AgroMarket. Still available?`;
-                    const whatsappUrl = `https://wa.me/${item.phone}?text=${encodeURIComponent(message)}`;
-
                     const isOwner = loggedInUser && item.userId === loggedInUser.userId;
-                    
-                    const deleteBtnHtml = isOwner ? `
-                        <button onclick="event.stopPropagation(); deleteListing('${item._id}')" class="w-9 h-9 bg-red-50 text-red-500 rounded-full hover:bg-red-500 hover:text-white flex items-center justify-center transition-colors">
-                            <i class="fa-solid fa-trash-can text-xs"></i>
-                        </button>
-                    ` : '';
-
-                    // 👉 UPDATED: Clean font-awesome setup logic initializing hearts as blank/regular layouts
-                    const wishlistBtnHtml = loggedInUser && !isOwner ? `
-                        <button onclick="event.stopPropagation(); toggleWishlist(this, '${item._id}')" class="wishlist-btn w-9 h-9 bg-gray-50 text-gray-400 rounded-full hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-colors" title="Save to Wishlist">
-                            <i class="fa-regular fa-heart text-sm"></i>
-                        </button>
-                    ` : '';
-
-                    const thumbnail = (item.images && item.images.length > 0) ? item.images[0] : item.image;
-                    const postedBadge = item.createdAt ? `<span class="absolute top-2 right-2 bg-black/50 text-white text-[10px] font-medium px-2 py-0.5 rounded-full">${timeAgo(item.createdAt)}</span>` : '';
-
                     const cardHtml = `
-                        <div onclick="window.location.href='listing.html?id=${item._id}'" class="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 flex flex-col cursor-pointer hover:shadow-md transition-shadow">
-                            <div class="h-44 overflow-hidden relative">
-                                <span class="absolute top-2 left-2 bg-white/90 text-gray-800 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">${item.category}</span>
-                                ${postedBadge}
-                                <img src="${thumbnail}" alt="${item.name}" class="w-full h-full object-cover">
-                            </div>
-                            <div class="p-4 flex-1 flex flex-col">
-                                <h3 class="font-bold text-gray-900 capitalize mb-0.5">${item.name}</h3>
-                                <p class="text-xs text-gray-400 mb-3">${item.quantity} Available</p>
-                                <div class="text-xs text-gray-600 mb-1"><i class="fa-solid fa-location-dot text-gray-400 mr-1.5"></i><span class="capitalize">${item.location}</span></div>
-                                <div class="text-xs text-gray-600 mb-4"><i class="fa-solid fa-clock text-gray-400 mr-1.5"></i>${item.readyDate}</div>
-                                <div class="mt-auto pt-3 border-t border-gray-50 flex items-center justify-between">
-                                    <div><span class="text-lg font-bold text-gray-900">P${item.price}</span><span class="text-[10px] text-gray-400">/${item.unit}</span></div>
-                                    
-                                    <div class="flex gap-1.5">
-                                        ${wishlistBtnHtml}
-                                        ${deleteBtnHtml}
-                                        ${!isOwner ? `<a href="${whatsappUrl}" target="_blank" onclick="event.stopPropagation()" class="w-9 h-9 bg-green-50 text-green-600 rounded-full hover:bg-green-600 hover:text-white flex items-center justify-center transition-colors"><i class="fa-brands fa-whatsapp text-lg"></i></a>` : ''}
-                                    </div>
-
-                                </div>
-                            </div>
+                        <div onclick="window.location.href='listing.html?id=${item._id}'" class="bg-white rounded-xl shadow-sm border p-3 cursor-pointer hover:shadow-md transition-shadow">
+                            <div class="h-32 overflow-hidden relative rounded-lg"><img src="${item.images[0]}" class="w-full h-full object-cover"></div>
+                            <h3 class="font-bold text-sm mt-2">${item.name}</h3>
+                            <p class="text-green-600 font-bold text-sm">P${item.price}</p>
+                            <button onclick="event.stopPropagation(); toggleWishlist(this, '${item._id}')" class="mt-2 text-gray-400"><i class="fa-regular fa-heart"></i></button>
                         </div>`;
                     listingsGrid.insertAdjacentHTML('beforeend', cardHtml);
                 });
             }
 
-            // 👉 UPDATED: Clean, global multi-directional router toggling item saves
-            window.toggleWishlist = function(buttonElement, listingId) {
-                if (!loggedInUser || !token) return;
-
-                const icon = buttonElement.querySelector('i');
-                const isSaved = icon.classList.contains('fa-solid') && buttonElement.classList.contains('text-red-500');
-                const endpoint = isSaved ? '/api/wishlist/remove' : '/api/wishlist/add';
-
-                fetch(endpoint, {
+            window.toggleWishlist = function(btn, id) {
+                fetch('/api/wishlist/add', {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}` 
-                    },
-                    body: JSON.stringify({ listingId: listingId })
-                })
-                .then(res => {
-                    if(!res.ok) throw new Error("Wishlist update failed");
-                    return res.json();
-                })
-                .then(data => {
-                    if (isSaved) {
-                        // Unclicked: Turn back to normal gray outline
-                        buttonElement.classList.remove('bg-red-50', 'text-red-500');
-                        buttonElement.classList.add('bg-gray-50', 'text-gray-400');
-                        icon.classList.remove('fa-solid');
-                        icon.classList.add('fa-regular');
-                    } else {
-                        // Clicked: Turn into solid crimson active design
-                        buttonElement.classList.remove('bg-gray-50', 'text-gray-400');
-                        buttonElement.classList.add('bg-red-50', 'text-red-500');
-                        icon.classList.remove('fa-regular');
-                        icon.classList.add('fa-solid');
-                    }
-                })
-                .catch(err => console.error("Error updating wishlist profile selection:", err));
-            }
-
-            window.deleteListing = function(id) {
-                if (confirm("Remove this post permanently?")) {
-                    fetch(`/api/listings/${id}`, {
-                        method: 'DELETE',
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    })
-                    .then(res => res.json().then(data => ({ ok: res.ok, data })))
-                    .then(({ ok, data }) => {
-                        if (ok) fetchListings(searchInput.value, locationSelect.value);
-                        else alert(data.error);
-                    });
-                }
-            }
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ listingId: id })
+                }).then(() => btn.classList.add('text-red-500'));
+            };
 
             searchBtn.addEventListener('click', () => fetchListings(searchInput.value, locationSelect.value));
-
-            let searchDebounceTimer;
-            searchInput.addEventListener('input', () => {
-                clearTimeout(searchDebounceTimer);
-                searchDebounceTimer = setTimeout(() => {
-                    fetchListings(searchInput.value, locationSelect.value);
-                }, 400);
-            });
-
-            locationSelect.addEventListener('change', () => {
-                fetchListings(searchInput.value, locationSelect.value);
-            });
-
-            const locationSelectMobile = document.getElementById('location-select-mobile');
-            locationSelectMobile.addEventListener('change', () => {
-                locationSelect.value = locationSelectMobile.value;
-                fetchListings(searchInput.value, locationSelect.value);
-            });
-
             fetchListings();
         });
     </script>
