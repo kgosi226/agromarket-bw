@@ -10,6 +10,7 @@
 </head>
 <body class="h-screen overflow-hidden flex flex-col bg-gray-50 text-gray-800">
 
+    <!-- NAV: Fixed at top -->
     <nav class="flex-none bg-white border-b border-gray-200 z-50 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
@@ -25,6 +26,7 @@
         </div>
     </nav>
 
+    <!-- HEADER WRAPPER -->
     <div class="flex-none">
         <div class="bg-green-800 pb-12 sm:pb-24 pt-6 sm:pt-12 relative">
             <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1500937386664-56d1dfef4e78?auto=format&fit=crop&w=2000&q=20')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
@@ -73,6 +75,7 @@
         </div>
     </div>
 
+    <!-- MAIN: Scrollable content -->
     <main class="flex-1 overflow-y-auto max-w-7xl mx-auto px-4 pb-20 w-full">
         <div class="flex justify-between items-end mb-4 sm:mb-6">
             <h2 class="text-lg sm:text-xl font-bold text-gray-900">Live Marketplace</h2>
@@ -87,6 +90,8 @@
             const resultsCount = document.getElementById('results-count');
             const searchInput = document.getElementById('search-input');
             const locationSelect = document.getElementById('location-select');
+            // 👉 FIXED: Defined locationSelectMobile here
+            const locationSelectMobile = document.getElementById('location-select-mobile');
             const searchBtn = document.getElementById('search-btn');
             const navActions = document.getElementById('nav-actions');
 
@@ -127,7 +132,6 @@
             function renderListings(items) {
                 listingsGrid.innerHTML = items.length === 0 ? `<p class="col-span-full text-center text-gray-400 py-8">No matching entries.</p>` : '';
                 items.forEach(item => {
-                    const isOwner = loggedInUser && item.userId === loggedInUser.userId;
                     const cardHtml = `
                         <div onclick="window.location.href='listing.html?id=${item._id}'" class="bg-white rounded-xl shadow-sm border p-3 cursor-pointer hover:shadow-md transition-shadow">
                             <div class="h-32 overflow-hidden relative rounded-lg"><img src="${item.images[0]}" class="w-full h-full object-cover"></div>
@@ -141,16 +145,13 @@
 
             window.toggleWishlist = function(btn, id) {
                 if (!token) return alert('Please sign in');
-                const isSaved = btn.classList.contains('text-red-500');
-                const endpoint = isSaved ? '/api/wishlist/remove' : '/api/wishlist/add';
-                fetch(endpoint, {
+                fetch('/api/wishlist/add', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ listingId: id })
                 }).then(() => {
-                    btn.classList.toggle('text-red-500');
-                    btn.querySelector('i').classList.toggle('fa-solid');
-                    btn.querySelector('i').classList.toggle('fa-regular');
+                    btn.classList.add('text-red-500');
+                    btn.querySelector('i').classList.add('fa-solid');
                 });
             };
 
