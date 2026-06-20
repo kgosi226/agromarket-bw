@@ -20,16 +20,16 @@
                 <a href="index.html" class="text-sm font-medium text-gray-600 hover:text-gray-900">
                     <i class="fa-solid fa-arrow-left mr-2"></i>Back to Market
                 </a>
-                <!-- Add this link in your profile menu -->
-<a href="wishlist.html" class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:border-green-500 transition">
-    <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-red-50 text-red-500 rounded-full flex items-center justify-center">
-            <i class="fa-solid fa-heart"></i>
-        </div>
-        <span class="font-semibold text-gray-700">My Saved Items</span>
-    </div>
-    <i class="fa-solid fa-chevron-right text-gray-300"></i>
-</a>
+                
+                <!-- RESPONSIVE WISHLIST BUTTON -->
+                <a href="wishlist.html" class="flex items-center justify-between p-3 sm:p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:border-green-500 transition">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 sm:w-10 sm:h-10 bg-red-50 text-red-500 rounded-full flex items-center justify-center">
+                            <i class="fa-solid fa-heart text-sm sm:text-base"></i>
+                        </div>
+                        <span class="font-semibold text-gray-700 text-sm sm:text-base">Saved</span>
+                    </div>
+                </a>
             </div>
         </div>
     </nav>
@@ -87,7 +87,6 @@
     <script>
         const token = localStorage.getItem('agro_token');
 
-        // Security guard: redirect if not logged in
         if (!token) {
             alert('Please sign in to view your profile.');
             window.location.href = 'login.html';
@@ -101,7 +100,7 @@
         const passwordForm = document.getElementById('password-form');
         const myListingsContainer = document.getElementById('my-listings');
 
-        // --- Load profile info ---
+        // Load profile info
         fetch('/api/users/me', {
             headers: { 'Authorization': `Bearer ${token}` }
         })
@@ -110,12 +109,9 @@
             if (ok) {
                 profileName.textContent = data.name;
                 profilePhone.textContent = data.phone;
-
-                // Keep localStorage profile in sync too
                 localStorage.setItem('user_profile', JSON.stringify({ name: data.name, phone: data.phone }));
             } else {
                 profileName.textContent = 'Could not load profile';
-                console.error(data.error);
             }
         })
         .catch(err => {
@@ -123,7 +119,7 @@
             console.error(err);
         });
 
-        // --- Load my listings ---
+        // Load my listings
         fetch('/api/listings')
             .then(res => res.json())
             .then(allListings => {
@@ -155,10 +151,8 @@
             })
             .catch(err => {
                 myListingsContainer.innerHTML = `<p class="text-sm text-red-400">Could not load your listings.</p>`;
-                console.error(err);
             });
 
-        // --- Delete a listing from the profile page ---
         window.deleteMyListing = function(id) {
             if (confirm("Remove this listing permanently?")) {
                 fetch(`/api/listings/${id}`, {
@@ -176,10 +170,8 @@
             }
         };
 
-        // --- Change password ---
         passwordForm.addEventListener('submit', function(e) {
             e.preventDefault();
-
             const currentPassword = document.getElementById('current-password').value;
             const newPassword = document.getElementById('new-password').value;
             const confirmPassword = document.getElementById('confirm-password').value;
@@ -207,7 +199,6 @@
                 }
             })
             .catch(err => {
-                console.error(err);
                 alert('Could not connect to the server.');
             });
         });

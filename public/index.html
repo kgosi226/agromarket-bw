@@ -90,7 +90,6 @@
             const resultsCount = document.getElementById('results-count');
             const searchInput = document.getElementById('search-input');
             const locationSelect = document.getElementById('location-select');
-            // 👉 FIXED: Defined locationSelectMobile here
             const locationSelectMobile = document.getElementById('location-select-mobile');
             const searchBtn = document.getElementById('search-btn');
             const navActions = document.getElementById('nav-actions');
@@ -137,7 +136,10 @@
                             <div class="h-32 overflow-hidden relative rounded-lg"><img src="${item.images[0]}" class="w-full h-full object-cover"></div>
                             <h3 class="font-bold text-sm mt-2">${item.name}</h3>
                             <p class="text-green-600 font-bold text-sm">P${item.price}</p>
-                            <button onclick="event.stopPropagation(); toggleWishlist(this, '${item._id}')" class="mt-2 text-gray-400 wishlist-btn"><i class="fa-regular fa-heart"></i></button>
+                            <div class="flex items-center justify-between mt-2">
+                                <button onclick="event.stopPropagation(); toggleWishlist(this, '${item._id}')" class="text-gray-400"><i class="fa-regular fa-heart"></i></button>
+                                <a href="https://wa.me/${item.phone}" target="_blank" onclick="event.stopPropagation()" class="text-green-500 text-lg"><i class="fa-brands fa-whatsapp"></i></a>
+                            </div>
                         </div>`;
                     listingsGrid.insertAdjacentHTML('beforeend', cardHtml);
                 });
