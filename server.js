@@ -228,16 +228,90 @@ app.put('/api/listings/:id', verifyToken, upload.array('images', 4), async (req,
     }
 });
 
-// --- USER PROFILE ROUTES ---
+// --- WISHLIST ROUTES ---
 
-// Get current user's profile
-app.get('/api/users/me', verifyToken, async (req, res) => {
+// Get the logged-in user's wishlisted listings (full listing objects)
+app.get('/api/wishlist', verifyToken, async (req, res) => {
     try {
-        const user = await User.findById(req.userId).select('name phone');
+        const user = await User.findById(req.userId).populate('wishlist');
         if (!user) {
             return res.status(404).json({ error: "User not found." });
         }
-        res.status(200).json({ name: user.name, phone: user.phone });
+        res.status(200).json(user.wishlist || []);
+    } catch (error) {
+        console.error("❌ Error fetching wishlist:", error);
+        res.status(500).json({ error: "Failed to fetch wishlist." });
+    }
+});
+
+// Add a listing to the wishlist
+app.post('/api/wishlist/add', verifyToken, async (req, res) => {
+    try {
+        const { listingId } = req.body;
+
+        if (!listingId) {
+            return res.status(400).json({ error: "listingId is required." });
+        }
+
+        const listing = await Listing.findById(listingId);
+        if (!listing) {
+            return res.status(404).json({ error: "Listing not found." });
+        }
+
+        const user = await User.findById(req.userId);
+        if (!user) {
+            return res.status(404).json({ error: "User not found." });
+        }
+
+        // Avoid duplicates
+        if (!user.wishlist.some(id => id.toString() === listingId)) {
+            user.wishlist.push(listingId);
+            await user.save();
+        }
+
+        res.status(200).json({ message: "Added to wishlist.", wishlist: user.wishlist });
+
+    } catch (error) {
+        console.error("❌ Error adding to wishlist:", error);
+        res.status(500).json({ error: "Failed to add to wishlist." });
+    }
+});
+
+// Remove a listing from the wishlist
+app.post('/api/wishlist/remove', verifyToken, async (req, res) => {
+    try {
+        const { listingId } = req.body;
+
+        if (!listingId) {
+            return res.status(400).json({ error: "listingId is required." });
+        }
+
+        const user = await User.findById(req.userId);
+        if (!user) {
+            return res.status(404).json({ error: "User not found." });
+        }
+
+        user.wishlist = user.wishlist.filter(id => id.toString() !== listingId);
+        await user.save();
+
+        res.status(200).json({ message: "Removed from wishlist.", wishlist: user.wishlist });
+
+    } catch (error) {
+        console.error("❌ Error removing from wishlist:", error);
+        res.status(500).json({ error: "Failed to remove from wishlist." });
+    }
+});
+
+// --- USER PROFILE ROUTES ---
+
+// Get current user's profile (now also returns wishlist IDs, so the frontend can mark hearts as filled)
+app.get('/api/users/me', verifyToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.userId).select('name phone wishlist');
+        if (!user) {
+            return res.status(404).json({ error: "User not found." });
+        }
+        res.status(200).json({ name: user.name, phone: user.phone, wishlist: user.wishlist || [] });
     } catch (error) {
         console.error("❌ Error fetching profile:", error);
         res.status(500).json({ error: "Failed to fetch profile." });

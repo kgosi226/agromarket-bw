@@ -43,6 +43,9 @@
             loggedInUser.userId = tokenPayload.userId;
         }
 
+        // Wishlist IDs for the logged-in user, fetched before rendering so the heart shows the right state immediately
+        let wishlistIds = [];
+
         // Converts a date into a friendly "Posted X ago" string
         function timeAgo(dateString) {
             const date = new Date(dateString);
@@ -65,9 +68,12 @@
             return 'Posted just now';
         }
 
-        if (!listingId) {
-            content.innerHTML = `<p class="text-center text-gray-400 py-20">No listing specified.</p>`;
-        } else {
+        function loadListing() {
+            if (!listingId) {
+                content.innerHTML = `<p class="text-center text-gray-400 py-20">No listing specified.</p>`;
+                return;
+            }
+
             fetch(`/api/listings/${listingId}`)
                 .then(res => res.json().then(data => ({ ok: res.ok, data })))
                 .then(({ ok, data }) => {
@@ -82,6 +88,19 @@
                     console.error(err);
                     content.innerHTML = `<p class="text-center text-gray-400 py-20">Could not load this listing.</p>`;
                 });
+        }
+
+        // If logged in, fetch wishlist first so the heart renders correctly on first paint
+        if (token && loggedInUser) {
+            fetch('/api/users/me', { headers: { 'Authorization': `Bearer ${token}` } })
+                .then(res => res.json())
+                .then(data => {
+                    wishlistIds = (data.wishlist || []).map(id => id.toString());
+                })
+                .catch(err => console.error('Could not load wishlist:', err))
+                .finally(loadListing);
+        } else {
+            loadListing();
         }
 
         function renderListing(item) {
@@ -114,6 +133,13 @@
                         <i class="fa-solid fa-trash-can mr-2"></i>Delete
                     </button>
                 </div>
+            ` : '';
+
+            const isWishlisted = wishlistIds.includes(item._id);
+            const wishlistBtnHtml = (loggedInUser && !isOwner) ? `
+                <button onclick="toggleWishlist(this, '${item._id}')" data-id="${item._id}" class="wishlist-btn w-full mt-2 border ${isWishlisted ? 'border-red-200 text-red-500' : 'border-gray-200 text-gray-600'} font-semibold py-2.5 rounded-xl hover:bg-gray-50 transition text-sm flex items-center justify-center gap-2">
+                    <i class="${isWishlisted ? 'fa-solid' : 'fa-regular'} fa-heart"></i> ${isWishlisted ? 'Saved to Wishlist' : 'Save to Wishlist'}
+                </button>
             ` : '';
 
             content.innerHTML = `
@@ -164,11 +190,63 @@
                                </a>`
                         }
 
+                        ${wishlistBtnHtml}
                         ${ownerActionsHtml}
                     </div>
                 </div>
             `;
         }
+
+        window.toggleWishlist = function(btn, id) {
+            if (!token) {
+                alert('Please sign in to save listings to your wishlist.');
+                return;
+            }
+
+            const isCurrentlyWishlisted = wishlistIds.includes(id);
+            const endpoint = isCurrentlyWishlisted ? '/api/wishlist/remove' : '/api/wishlist/add';
+
+            fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ listingId: id })
+            })
+            .then(res => res.json().then(data => ({ ok: res.ok, data })))
+            .then(({ ok, data }) => {
+                if (!ok) {
+                    alert(data.error || 'Could not update wishlist.');
+                    return;
+                }
+
+                if (isCurrentlyWishlisted) {
+                    wishlistIds = wishlistIds.filter(wId => wId !== id);
+                } else {
+                    wishlistIds.push(id);
+                }
+
+                // Re-render the button in its new state
+                const icon = btn.querySelector('i');
+                const label = btn.querySelector('span') || btn;
+                if (isCurrentlyWishlisted) {
+                    btn.classList.remove('border-red-200', 'text-red-500');
+                    btn.classList.add('border-gray-200', 'text-gray-600');
+                    icon.classList.remove('fa-solid');
+                    icon.classList.add('fa-regular');
+                    btn.innerHTML = `<i class="fa-regular fa-heart"></i> Save to Wishlist`;
+                } else {
+                    btn.classList.remove('border-gray-200', 'text-gray-600');
+                    btn.classList.add('border-red-200', 'text-red-500');
+                    btn.innerHTML = `<i class="fa-solid fa-heart"></i> Saved to Wishlist`;
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Could not connect to the server.');
+            });
+        };
 
         window.deleteThisListing = function(id) {
             if (confirm("Remove this listing permanently?")) {
