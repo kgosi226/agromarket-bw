@@ -10,7 +10,6 @@
 </head>
 <body class="h-screen overflow-hidden flex flex-col bg-gray-50 text-gray-800">
 
-    <!-- NAV: Fixed at top, does not scroll -->
     <nav class="flex-none bg-white border-b border-gray-200 z-50 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
@@ -26,7 +25,6 @@
         </div>
     </nav>
 
-    <!-- HEADER WRAPPER: Contains Hero and Search, does not scroll -->
     <div class="flex-none">
         <div class="bg-green-800 pb-12 sm:pb-24 pt-6 sm:pt-12 relative">
             <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1500937386664-56d1dfef4e78?auto=format&fit=crop&w=2000&q=20')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
@@ -41,9 +39,17 @@
                 <input type="text" id="search-input" placeholder="Search..." class="flex-1 min-w-0 bg-gray-50 rounded-lg px-3 py-2 text-sm focus:outline-none border border-gray-200">
                 <select id="location-select" class="hidden sm:block bg-gray-50 rounded-lg px-4 py-2 text-sm focus:outline-none border border-gray-200">
                     <option value="all">All Locations</option>
-                    <option value="kanye">Kanye</option>
-                    <option value="ghanzi">Ghanzi</option>
                     <option value="gaborone">Gaborone</option>
+                    <option value="francistown">Francistown</option>
+                    <option value="molepolole">Molepolole</option>
+                    <option value="maun">Maun</option>
+                    <option value="serowe">Serowe</option>
+                    <option value="kanye">Kanye</option>
+                    <option value="mahalapye">Mahalapye</option>
+                    <option value="lobatse">Lobatse</option>
+                    <option value="palapye">Palapye</option>
+                    <option value="ghanzi">Ghanzi</option>
+                    <option value="kasane">Kasane</option>
                 </select>
                 <button id="search-btn" class="bg-green-600 text-white rounded-lg px-4 sm:px-6 py-2 font-semibold text-sm hover:bg-green-700 transition shrink-0">
                     <i class="fa-solid fa-magnifying-glass sm:hidden"></i>
@@ -52,14 +58,21 @@
             </div>
             <select id="location-select-mobile" class="sm:hidden mt-2 w-full bg-white rounded-lg px-3 py-2 text-sm focus:outline-none border border-gray-200 shadow-md">
                 <option value="all">All Locations</option>
-                <option value="kanye">Kanye</option>
-                <option value="ghanzi">Ghanzi</option>
                 <option value="gaborone">Gaborone</option>
+                <option value="francistown">Francistown</option>
+                <option value="molepolole">Molepolole</option>
+                <option value="maun">Maun</option>
+                <option value="serowe">Serowe</option>
+                <option value="kanye">Kanye</option>
+                <option value="mahalapye">Mahalapye</option>
+                <option value="lobatse">Lobatse</option>
+                <option value="palapye">Palapye</option>
+                <option value="ghanzi">Ghanzi</option>
+                <option value="kasane">Kasane</option>
             </select>
         </div>
     </div>
 
-    <!-- MAIN: Only this section will scroll -->
     <main class="flex-1 overflow-y-auto max-w-7xl mx-auto px-4 pb-20 w-full">
         <div class="flex justify-between items-end mb-4 sm:mb-6">
             <h2 class="text-lg sm:text-xl font-bold text-gray-900">Live Marketplace</h2>
@@ -111,13 +124,6 @@
                     });
             }
 
-            function timeAgo(dateString) {
-                const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
-                const intervals = [{l: 'y', s: 31536000}, {l: 'mo', s: 2592000}, {l: 'd', s: 86400}, {l: 'h', s: 3600}, {l: 'm', s: 60}];
-                for (const i of intervals) { const c = Math.floor(seconds / i.s); if (c >= 1) return `${c}${i.l} ago`; }
-                return 'just now';
-            }
-
             function renderListings(items) {
                 listingsGrid.innerHTML = items.length === 0 ? `<p class="col-span-full text-center text-gray-400 py-8">No matching entries.</p>` : '';
                 items.forEach(item => {
@@ -127,21 +133,35 @@
                             <div class="h-32 overflow-hidden relative rounded-lg"><img src="${item.images[0]}" class="w-full h-full object-cover"></div>
                             <h3 class="font-bold text-sm mt-2">${item.name}</h3>
                             <p class="text-green-600 font-bold text-sm">P${item.price}</p>
-                            <button onclick="event.stopPropagation(); toggleWishlist(this, '${item._id}')" class="mt-2 text-gray-400"><i class="fa-regular fa-heart"></i></button>
+                            <button onclick="event.stopPropagation(); toggleWishlist(this, '${item._id}')" class="mt-2 text-gray-400 wishlist-btn"><i class="fa-regular fa-heart"></i></button>
                         </div>`;
                     listingsGrid.insertAdjacentHTML('beforeend', cardHtml);
                 });
             }
 
             window.toggleWishlist = function(btn, id) {
-                fetch('/api/wishlist/add', {
+                if (!token) return alert('Please sign in');
+                const isSaved = btn.classList.contains('text-red-500');
+                const endpoint = isSaved ? '/api/wishlist/remove' : '/api/wishlist/add';
+                fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ listingId: id })
-                }).then(() => btn.classList.add('text-red-500'));
+                }).then(() => {
+                    btn.classList.toggle('text-red-500');
+                    btn.querySelector('i').classList.toggle('fa-solid');
+                    btn.querySelector('i').classList.toggle('fa-regular');
+                });
             };
 
             searchBtn.addEventListener('click', () => fetchListings(searchInput.value, locationSelect.value));
+            
+            locationSelect.addEventListener('change', () => fetchListings(searchInput.value, locationSelect.value));
+            locationSelectMobile.addEventListener('change', () => {
+                locationSelect.value = locationSelectMobile.value;
+                fetchListings(searchInput.value, locationSelect.value);
+            });
+
             fetchListings();
         });
     </script>
