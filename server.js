@@ -237,6 +237,22 @@ app.post('/api/wishlist/add', verifyToken, async (req, res) => {
     }
 });
 
+// Remove item from wishlist ($pull cleanly removes the ID from your array)
+app.post('/api/wishlist/remove', verifyToken, async (req, res) => {
+    try {
+        const { listingId } = req.body;
+        
+        await User.findByIdAndUpdate(req.userId, {
+            $pull: { wishlist: listingId }
+        });
+
+        res.status(200).json({ message: "Item removed from wishlist successfully." });
+    } catch (error) {
+        console.error("❌ Wishlist removal error:", error);
+        res.status(500).json({ error: "Failed to remove item from wishlist." });
+    }
+});
+
 // Fetch active populated wishlist elements directly linked to authenticated user profile
 app.get('/api/wishlist', verifyToken, async (req, res) => {
     try {

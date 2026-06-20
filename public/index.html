@@ -104,25 +104,25 @@
                 });
             }
 
-          function fetchListings(searchTerm = '', locationTerm = 'all') {
-    const url = `/api/listings?search=${encodeURIComponent(searchTerm)}&location=${encodeURIComponent(locationTerm)}`;
+            function fetchListings(searchTerm = '', locationTerm = 'all') {
+                const url = `/api/listings?search=${encodeURIComponent(searchTerm)}&location=${encodeURIComponent(locationTerm)}`;
 
-    fetch(url)
-        .then(res => {
-            if (!res.ok) throw new Error(`Server returned status ${res.status}`);
-            return res.json();
-        })
-        .then(payload => {
-            // Ensure payload is an array before reading its length
-            const items = Array.isArray(payload) ? payload : [];
-            resultsCount.textContent = `${items.length} item(s) available`;
-            renderListings(items);
-        })
-        .catch(err => {
-            console.error("Error fetching listings:", err);
-            resultsCount.textContent = "Error loading marketplace entries.";
-        });
-}
+                fetch(url)
+                    .then(res => {
+                        if (!res.ok) throw new Error(`Server returned status ${res.status}`);
+                        return res.json();
+                    })
+                    .then(payload => {
+                        const items = Array.isArray(payload) ? payload : [];
+                        resultsCount.textContent = `${items.length} item(s) available`;
+                        renderListings(items);
+                    })
+                    .catch(err => {
+                        console.error("Error fetching listings:", err);
+                        resultsCount.textContent = "Error loading marketplace entries.";
+                    });
+            }
+
             function timeAgo(dateString) {
                 if (!dateString) return '';
                 const date = new Date(dateString);
@@ -162,10 +162,10 @@
                         </button>
                     ` : '';
 
-                    // 👉 NEW: Wishlist button HTML
+                    // 👉 UPDATED: Clean font-awesome setup logic initializing hearts as blank/regular layouts
                     const wishlistBtnHtml = loggedInUser && !isOwner ? `
-                        <button onclick="event.stopPropagation(); addToWishlist(this, '${item._id}')" class="w-9 h-9 bg-gray-50 text-gray-400 rounded-full hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-colors" title="Save to Wishlist">
-                            <i class="fa-solid fa-heart text-sm"></i>
+                        <button onclick="event.stopPropagation(); toggleWishlist(this, '${item._id}')" class="wishlist-btn w-9 h-9 bg-gray-50 text-gray-400 rounded-full hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-colors" title="Save to Wishlist">
+                            <i class="fa-regular fa-heart text-sm"></i>
                         </button>
                     ` : '';
 
@@ -200,28 +200,42 @@
                 });
             }
 
-            // 👉 NEW: The JavaScript function to handle clicking the heart
-            window.addToWishlist = function(buttonElement, listingId) {
-                if (!loggedInUser) return;
+            // 👉 UPDATED: Clean, global multi-directional router toggling item saves
+            window.toggleWishlist = function(buttonElement, listingId) {
+                if (!loggedInUser || !token) return;
 
-                fetch('/api/wishlist/add', {
+                const icon = buttonElement.querySelector('i');
+                const isSaved = icon.classList.contains('fa-solid') && buttonElement.classList.contains('text-red-500');
+                const endpoint = isSaved ? '/api/wishlist/remove' : '/api/wishlist/add';
+
+                fetch(endpoint, {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}` 
                     },
-                    body: JSON.stringify({
-                        userId: loggedInUser.userId,
-                        listingId: listingId
-                    })
+                    body: JSON.stringify({ listingId: listingId })
                 })
-                .then(res => res.json())
+                .then(res => {
+                    if(!res.ok) throw new Error("Wishlist update failed");
+                    return res.json();
+                })
                 .then(data => {
-                    // Visually turn the heart red to show it worked
-                    buttonElement.classList.remove('bg-gray-50', 'text-gray-400');
-                    buttonElement.classList.add('bg-red-50', 'text-red-500');
+                    if (isSaved) {
+                        // Unclicked: Turn back to normal gray outline
+                        buttonElement.classList.remove('bg-red-50', 'text-red-500');
+                        buttonElement.classList.add('bg-gray-50', 'text-gray-400');
+                        icon.classList.remove('fa-solid');
+                        icon.classList.add('fa-regular');
+                    } else {
+                        // Clicked: Turn into solid crimson active design
+                        buttonElement.classList.remove('bg-gray-50', 'text-gray-400');
+                        buttonElement.classList.add('bg-red-50', 'text-red-500');
+                        icon.classList.remove('fa-regular');
+                        icon.classList.add('fa-solid');
+                    }
                 })
-                .catch(err => console.error("Error adding to wishlist:", err));
+                .catch(err => console.error("Error updating wishlist profile selection:", err));
             }
 
             window.deleteListing = function(id) {
