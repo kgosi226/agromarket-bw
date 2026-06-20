@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AgroMarket | Botswana's Local Harvest</title>
+    <meta name="description" content="Buy and sell crops and livestock directly with farmers across Botswana. No middlemen, no fees — just WhatsApp the seller and arrange collection.">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23059669'/%3E%3Cpath d='M30 65c0-25 20-35 40-35-5 20-15 35-40 35z' fill='white'/%3E%3Cpath d='M30 65c10-15 20-20 40-30' stroke='white' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style> @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap'); body { font-family: 'Inter', sans-serif; } </style>
@@ -71,6 +73,23 @@
         </select>
     </div>
 
+    <div id="trust-strip" class="max-w-4xl mx-auto px-4 mb-8 sm:mb-12">
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm flex divide-x divide-gray-100 text-center">
+            <div class="flex-1 py-3 sm:py-4">
+                <p id="stat-listings" class="text-lg sm:text-2xl font-bold text-green-700">—</p>
+                <p class="text-[10px] sm:text-xs text-gray-400 font-medium">Active Listings</p>
+            </div>
+            <div class="flex-1 py-3 sm:py-4">
+                <p id="stat-districts" class="text-lg sm:text-2xl font-bold text-green-700">—</p>
+                <p class="text-[10px] sm:text-xs text-gray-400 font-medium">Districts Covered</p>
+            </div>
+            <div class="flex-1 py-3 sm:py-4">
+                <p class="text-lg sm:text-2xl font-bold text-green-700">P0</p>
+                <p class="text-[10px] sm:text-xs text-gray-400 font-medium">Middleman Fees</p>
+            </div>
+        </div>
+    </div>
+
     <main class="max-w-7xl mx-auto px-4 pb-20">
         <div class="flex justify-between items-end mb-4 sm:mb-6">
             <h2 class="text-lg sm:text-xl font-bold text-gray-900">Live Marketplace</h2>
@@ -78,6 +97,56 @@
         </div>
         <div id="listings-grid" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6"></div>
     </main>
+
+    <!-- How it works -->
+    <section class="bg-white border-t border-gray-100 py-12 sm:py-16">
+        <div class="max-w-5xl mx-auto px-4">
+            <h2 class="text-center text-xl sm:text-2xl font-bold text-gray-900 mb-2">How AgroMarket works</h2>
+            <p class="text-center text-sm text-gray-500 mb-10">No accounts for buyers, no fees, no middlemen — just direct contact.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-8">
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-green-50 text-green-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </div>
+                    <h3 class="font-bold text-gray-900 mb-1">1. Browse listings</h3>
+                    <p class="text-sm text-gray-500">Search produce or livestock by name and location, posted directly by farmers near you.</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-green-50 text-green-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fa-brands fa-whatsapp"></i>
+                    </div>
+                    <h3 class="font-bold text-gray-900 mb-1">2. Contact on WhatsApp</h3>
+                    <p class="text-sm text-gray-500">Tap the WhatsApp button to message the seller directly — no middlemen, no platform fees.</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-green-50 text-green-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fa-solid fa-handshake"></i>
+                    </div>
+                    <h3 class="font-bold text-gray-900 mb-1">3. Meet & collect</h3>
+                    <p class="text-sm text-gray-500">Arrange collection or delivery directly with the seller, and pay them in person.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-gray-900 text-gray-400 py-10">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-6 mb-8">
+                <div class="flex items-center gap-2">
+                    <div class="bg-green-600 text-white p-2 rounded-lg"><i class="fa-solid fa-leaf"></i></div>
+                    <span class="text-lg font-bold text-white">AgroMarket</span>
+                </div>
+                <div class="flex gap-6 text-sm">
+                    <a href="index.html" class="hover:text-white transition">Browse</a>
+                    <a href="sell.html" class="hover:text-white transition">Sell</a>
+                    <a href="login.html" class="hover:text-white transition">Sign In</a>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 pt-6 text-center text-xs text-gray-500">
+                &copy; 2026 AgroMarket BW. Connecting Botswana's farmers directly with buyers.
+            </div>
+        </div>
+    </footer>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -317,7 +386,29 @@
                 fetchListings(searchInput.value, locationSelect.value);
             });
 
+            // Trust strip stats — always computed from the FULL dataset, not the current search/filter
+            function loadTrustStats() {
+                fetch('/api/listings')
+                    .then(res => res.json())
+                    .then(payload => {
+                        const items = Array.isArray(payload) ? payload : [];
+                        const listingsEl = document.getElementById('stat-listings');
+                        const districtsEl = document.getElementById('stat-districts');
+
+                        if (listingsEl) listingsEl.textContent = items.length;
+
+                        if (districtsEl) {
+                            const uniqueLocations = new Set(
+                                items.map(item => (item.location || '').trim().toLowerCase()).filter(Boolean)
+                            );
+                            districtsEl.textContent = uniqueLocations.size;
+                        }
+                    })
+                    .catch(err => console.error('Could not load trust stats:', err));
+            }
+
             fetchListings();
+            loadTrustStats();
         });
     </script>
 </body>
